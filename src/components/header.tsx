@@ -1,24 +1,102 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Hospital } from 'lucide-react';
+import { Hospital, Menu, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
+  const navLinks = [
+    { href: '/#about', label: 'About Us' },
+    { href: '/#services', label: 'Services' },
+    { href: '/#facilities', label: 'Facilities' },
+    { href: '/#departments', label: 'Departments' },
+    { href: '/#gallery', label: 'Gallery' },
+    { href: '/#news', label: 'News & Events' },
+    { href: '/#contact', label: 'Contact' },
+  ];
+
   return (
-    <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
-      <nav className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <Hospital className="h-6 w-6" />
-          MediSync
-        </Link>
-        <ul className="flex space-x-6 items-center">
-          <li><Link href="/#about" className="hover:text-accent transition-colors">About Us</Link></li>
-          <li><Link href="/#services" className="hover:text-accent transition-colors">Services</Link></li>
-          <li><Link href="/#facilities" className="hover:text-accent transition-colors">Facilities</Link></li>
-          <li><Link href="/#departments" className="hover:text-accent transition-colors">Departments</Link></li>
-          <li><Link href="/#gallery" className="hover:text-accent transition-colors">Gallery</Link></li>
-          <li><Link href="/#news" className="hover:text-accent transition-colors">News & Events</Link></li>
-          <li><Link href="/#contact" className="hover:text-accent transition-colors">Contact</Link></li>
-          {/* Admin link removed */}
-        </ul>
+    <header
+      className={cn(
+        'sticky top-0 z-50 transition-all duration-300',
+        isScrolled ? 'bg-primary/95 shadow-md backdrop-blur-sm' : 'bg-primary'
+      )}
+    >
+      <nav className="container mx-auto px-4 py-3">
+        <div className="flex justify-between items-center">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary-foreground" onClick={closeMenu}>
+            <Hospital className="h-6 w-6" />
+            MediSync
+          </Link>
+
+          {/* Desktop Navigation */}
+          <ul className="hidden md:flex space-x-6 items-center">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="text-primary-foreground hover:text-accent transition-colors">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMenu}
+              aria-label="Toggle menu"
+              className="text-primary-foreground hover:bg-primary/80 focus:bg-primary/80"
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <div
+          className={cn(
+            'md:hidden overflow-hidden transition-all duration-300 ease-in-out',
+            isMenuOpen ? 'max-h-screen py-4' : 'max-h-0 py-0'
+          )}
+        >
+          <ul className="flex flex-col space-y-4 items-center">
+             {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="block text-primary-foreground hover:text-accent transition-colors text-lg py-1"
+                  onClick={closeMenu} // Close menu on link click
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
     </header>
   );
