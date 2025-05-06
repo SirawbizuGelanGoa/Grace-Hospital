@@ -1,0 +1,233 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from "@/hooks/use-toast";
+import { getNewsEvents, deleteNewsEvent, NewsEvent } from '@/lib/mock-data';
+import { format } from 'date-fns';
+import Image from 'next/image'; // Use next/image for previews
+import NewsFormDialog from './_components/news-form-dialog'; // Import the form dialog
+
+export default function ManageNewsPage() {
+  const [newsItems, setNewsItems] = useState<NewsEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingDelete, setIsProcessingDelete] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<NewsEvent | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchNewsData = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getNewsEvents();
+       // Ensure data is sorted by date descending
+      const sortedData = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setNewsItems(sortedData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load news items.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNewsData();
+  }, []);
+
+  const handleAddNew = () => {
+    setSelectedItem(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (item: NewsEvent) => {
+    setSelectedItem(item);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsProcessingDelete(id);
+    try {
+      const success = await deleteNewsEvent(id);
+      if (success) {
+        setNewsItems(prev => prev.filter(item => item.id !== id));
+        toast({
+          title: "Success",
+          description: "News item deleted successfully.",
+        });
+      } else {
+        throw new Error("News item not found or delete failed.");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete news item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingDelete(null);
+    }
+  };
+
+   const handleFormSuccess = (savedItem: NewsEvent) => {
+     let updatedList: NewsEvent[];
+     if (selectedItem) {
+        updatedList = newsItems.map(item => item.id === savedItem.id ? savedItem : item);
+     } else {
+        updatedList = [savedItem, ...newsItems];
+     }
+      // Re-sort the list by date after adding/updating
+     updatedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+     setNewsItems(updatedList);
+
+     setIsFormOpen(false);
+     setSelectedItem(null);
+   };
+
+   const formatDate = (dateString: string) => {
+     try {
+       return format(new Date(dateString), 'PPP'); // e.g., Jul 20, 2024
+     } catch {
+       return 'Invalid Date';
+     }
+   };
+
+
+  const MemoizedTableBody = useMemo(() => (
+     <TableBody>
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <TableRow key={`skeleton-${index}`}>
+              <TableCell><Skeleton className="h-10 w-16 rounded" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+              <TableCell className="text-right space-x-2">
+                <Skeleton className="h-8 w-8 inline-block" />
+                <Skeleton className="h-8 w-8 inline-block" />
+              </TableCell>
+            </TableRow>
+          ))
+        ) : newsItems.length === 0 ? (
+            <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    No news or events found. Add one to get started!
+                </TableCell>
+            </TableRow>
+        ) : (
+          newsItems.map((item) => (
+            <TableRow key={item.id}>
+             <TableCell className="w-[80px]">
+                <div className="relative h-10 w-16 rounded overflow-hidden border">
+                  <Image
+                    src={item.image}
+                    alt={item.title || 'News image'}
+                    layout="fill"
+                    objectFit="cover"
+                    unoptimized
+                  />
+                </div>
+              </TableCell>
+              <TableCell className="font-medium w-[300px]">{item.title}</TableCell>
+              <TableCell className="text-sm text-muted-foreground w-[120px]">{formatDate(item.date)}</TableCell>
+              <TableCell className="text-muted-foreground text-sm truncate">{item.summary}</TableCell>
+              <TableCell className="text-right space-x-2 w-[120px]">
+                 <Button variant="outline" size="icon" onClick={() => handleEdit(item)} aria-label={`Edit ${item.title}`}>
+                   <Edit className="h-4 w-4" />
+                 </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon" disabled={isProcessingDelete === item.id} aria-label={`Delete ${item.title}`}>
+                         {isProcessingDelete === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the news item
+                          "{item.title}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isProcessingDelete === item.id}>Cancel</AlertDialogCancel>
+                         <AlertDialogAction
+                            onClick={() => handleDelete(item.id)}
+                            disabled={isProcessingDelete === item.id}
+                            className="bg-destructive hover:bg-destructive/90"
+                         >
+                           {isProcessingDelete === item.id ? 'Deleting...' : 'Delete'}
+                         </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+  ), [isLoading, newsItems, isProcessingDelete, handleEdit, handleDelete]);
+
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+           <div>
+             <CardTitle>Manage News & Events</CardTitle>
+             <CardDescription>Add, edit, or delete news articles and event announcements.</CardDescription>
+           </div>
+          <Button onClick={handleAddNew}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+               <TableHead>Image</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Summary</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+           {MemoizedTableBody}
+        </Table>
+      </CardContent>
+
+      <NewsFormDialog
+         isOpen={isFormOpen}
+         setIsOpen={setIsFormOpen}
+         item={selectedItem}
+         onSuccess={handleFormSuccess}
+      />
+    </Card>
+  );
+}

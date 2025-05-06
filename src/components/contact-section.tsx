@@ -1,17 +1,38 @@
 "use client"; // Required for form handling
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import { getContactInfo, ContactInfo } from '@/lib/mock-data'; // Import data fetching function and type
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [contactDetails, setContactDetails] = useState<ContactInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContactData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getContactInfo();
+        setContactDetails(data);
+      } catch (error) {
+        console.error("Failed to fetch contact info:", error);
+        // Optionally set an error state here
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchContactData();
+  }, []);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -23,11 +44,12 @@ const ContactSection = () => {
     setIsSubmitting(true);
     setSubmitMessage('');
 
-    // Placeholder for actual form submission logic (e.g., API call)
+    // Placeholder for actual form submission logic (e.g., API call to a serverless function or backend)
     try {
       // Simulate API call
+      console.log('Submitting form data:', formData);
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Form submitted:', formData);
+      console.log('Form submitted successfully:', formData);
       setSubmitMessage('Thank you for your message! We will get back to you soon.');
       setFormData({ name: '', email: '', message: '' }); // Clear form
     } catch (error) {
@@ -38,12 +60,6 @@ const ContactSection = () => {
     }
   };
 
-  // In a real app, fetch contact details from the database
-  const contactDetails = {
-    address: '123 MediSync Way, Healthville, ST 54321',
-    phone: '(123) 456-7890',
-    email: 'info@medisync.hospital',
-  };
 
   return (
     <section id="contact" className="py-16 bg-secondary">
@@ -57,22 +73,44 @@ const ContactSection = () => {
                  <CardTitle className="text-2xl font-semibold text-primary">Get in Touch</CardTitle>
                </CardHeader>
                <CardContent className="space-y-6 text-muted-foreground">
-                 <div className="flex items-start gap-4">
-                   <MapPin className="h-6 w-6 text-accent mt-1 shrink-0" />
-                   <span>{contactDetails.address}</span>
-                 </div>
-                 <div className="flex items-center gap-4">
-                   <Phone className="h-6 w-6 text-accent shrink-0" />
-                   <a href={`tel:${contactDetails.phone}`} className="hover:text-primary">{contactDetails.phone}</a>
-                 </div>
-                 <div className="flex items-center gap-4">
-                   <Mail className="h-6 w-6 text-accent shrink-0" />
-                   <a href={`mailto:${contactDetails.email}`} className="hover:text-primary">{contactDetails.email}</a>
-                 </div>
-                 {/* Placeholder for Map */}
-                 <div className="mt-6 h-48 bg-muted rounded-lg flex items-center justify-center text-sm text-foreground">
-                   Map Placeholder
-                 </div>
+                {isLoading ? (
+                    <>
+                     <div className="flex items-start gap-4">
+                       <Skeleton className="h-6 w-6 rounded-full mt-1 shrink-0" />
+                       <Skeleton className="h-5 w-3/4" />
+                     </div>
+                     <div className="flex items-center gap-4">
+                       <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                       <Skeleton className="h-5 w-1/2" />
+                     </div>
+                     <div className="flex items-center gap-4">
+                       <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                       <Skeleton className="h-5 w-2/3" />
+                     </div>
+                      <Skeleton className="mt-6 h-48 w-full rounded-lg" />
+                    </>
+                 ) : contactDetails ? (
+                  <>
+                    <div className="flex items-start gap-4">
+                     <MapPin className="h-6 w-6 text-accent mt-1 shrink-0" />
+                     <span>{contactDetails.address}</span>
+                   </div>
+                   <div className="flex items-center gap-4">
+                     <Phone className="h-6 w-6 text-accent shrink-0" />
+                     <a href={`tel:${contactDetails.phone}`} className="hover:text-primary">{contactDetails.phone}</a>
+                   </div>
+                   <div className="flex items-center gap-4">
+                     <Mail className="h-6 w-6 text-accent shrink-0" />
+                     <a href={`mailto:${contactDetails.email}`} className="hover:text-primary">{contactDetails.email}</a>
+                   </div>
+                   {/* Placeholder for Map */}
+                   <div className="mt-6 h-48 bg-muted rounded-lg flex items-center justify-center text-sm text-foreground">
+                      {contactDetails.mapPlaceholder || 'Map Placeholder'}
+                   </div>
+                  </>
+                 ) : (
+                   <p>Failed to load contact information.</p>
+                 )}
                </CardContent>
              </Card>
           </div>
@@ -95,6 +133,7 @@ const ContactSection = () => {
                       value={formData.name}
                       onChange={handleChange}
                       required
+                      aria-required="true"
                     />
                   </div>
                   <div>
@@ -107,6 +146,7 @@ const ContactSection = () => {
                        value={formData.email}
                        onChange={handleChange}
                        required
+                       aria-required="true"
                     />
                   </div>
                   <div>
@@ -119,13 +159,14 @@ const ContactSection = () => {
                       value={formData.message}
                       onChange={handleChange}
                       required
+                      aria-required="true"
                     />
                   </div>
                   <Button type="submit" variant="accent" disabled={isSubmitting}>
                     {isSubmitting ? 'Sending...' : 'Send Message'}
                   </Button>
                    {submitMessage && (
-                     <p className={`mt-4 text-sm ${submitMessage.includes('Failed') ? 'text-destructive' : 'text-green-600'}`}>
+                     <p role="alert" className={`mt-4 text-sm ${submitMessage.includes('Failed') ? 'text-destructive' : 'text-green-600'}`}>
                        {submitMessage}
                      </p>
                    )}

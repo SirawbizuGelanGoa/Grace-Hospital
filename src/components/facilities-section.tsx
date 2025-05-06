@@ -1,15 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BedDouble, FlaskConical, Monitor, Stethoscope, Syringe } from 'lucide-react'; // Replaced MonitorHeart with Monitor
+import DynamicIcon from "@/lib/icons"; // Import the dynamic icon component
+import { getFacilities } from '@/lib/mock-data'; // Import data fetching function
 
-const FacilitiesSection = () => {
-  // In a real app, fetch this data from the database
-  const facilities = [
-    { id: 1, name: 'Modern Patient Rooms', description: 'Comfortable and well-equipped private and semi-private rooms.', icon: BedDouble },
-    { id: 2, name: 'Advanced Laboratory', description: 'State-of-the-art diagnostic testing facilities.', icon: FlaskConical },
-    { id: 3, name: 'Intensive Care Unit (ICU)', description: 'Specialized care for critically ill patients with continuous monitoring.', icon: Monitor }, // Updated icon
-    { id: 4, name: 'Outpatient Clinics', description: 'Convenient access to specialist consultations and follow-ups.', icon: Stethoscope },
-    { id: 5, name: 'Emergency Department', description: '24/7 emergency care services with experienced staff.', icon: Syringe }, // Note: Syringe might not be the best, consider Ambulance or AlertTriangle
-  ];
+const FacilitiesSection = async () => {
+  // Fetch facilities data from the mock source
+  const facilities = await getFacilities();
 
   return (
     <section id="facilities" className="py-16 bg-secondary">
@@ -20,7 +15,8 @@ const FacilitiesSection = () => {
             <Card key={facility.id} className="shadow-lg flex flex-col">
               <CardHeader className="flex flex-row items-center gap-4 pb-4">
                  <div className="bg-accent text-accent-foreground rounded-full p-3">
-                   <facility.icon className="h-6 w-6" />
+                   {/* Use DynamicIcon component */}
+                   <DynamicIcon name={facility.iconName} className="h-6 w-6" />
                  </div>
                 <CardTitle className="text-lg font-semibold text-primary">{facility.name}</CardTitle>
               </CardHeader>
@@ -30,6 +26,9 @@ const FacilitiesSection = () => {
             </Card>
           ))}
         </div>
+         {facilities.length === 0 && (
+          <p className="text-center text-muted-foreground mt-8">No facilities listed at this time.</p>
+        )}
       </div>
     </section>
   );

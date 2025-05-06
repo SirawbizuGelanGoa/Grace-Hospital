@@ -1,16 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Stethoscope, HeartPulse, Brain, Bone, Baby, Microscope } from 'lucide-react'; // Example icons
+import DynamicIcon from "@/lib/icons"; // Import the dynamic icon component
+import { getServices } from '@/lib/mock-data'; // Import data fetching function
 
-const ServicesSection = () => {
-  // In a real app, fetch this data from the database
-  const services = [
-    { id: 1, name: 'General Medicine', description: 'Comprehensive care for adults and children.', icon: Stethoscope },
-    { id: 2, name: 'Cardiology', description: 'Expert heart care and diagnostics.', icon: HeartPulse },
-    { id: 3, name: 'Neurology', description: 'Specialized treatment for brain and nerve disorders.', icon: Brain },
-    { id: 4, name: 'Orthopedics', description: 'Advanced care for bones and joints.', icon: Bone },
-    { id: 5, name: 'Pediatrics', description: 'Dedicated healthcare for infants and children.', icon: Baby },
-    { id: 6, name: 'Laboratory Services', description: 'Accurate diagnostic testing.', icon: Microscope },
-  ];
+const ServicesSection = async () => {
+  // Fetch services data from the mock source
+  const services = await getServices();
 
   return (
     <section id="services" className="py-16 bg-background">
@@ -21,7 +15,8 @@ const ServicesSection = () => {
             <Card key={service.id} className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
                 <div className="mx-auto bg-primary text-primary-foreground rounded-full p-4 w-fit mb-4">
-                   <service.icon className="h-8 w-8" />
+                   {/* Use DynamicIcon component */}
+                   <DynamicIcon name={service.iconName} className="h-8 w-8" />
                 </div>
                 <CardTitle className="text-xl font-semibold text-primary">{service.name}</CardTitle>
               </CardHeader>
@@ -31,6 +26,9 @@ const ServicesSection = () => {
             </Card>
           ))}
         </div>
+        {services.length === 0 && (
+           <p className="text-center text-muted-foreground mt-8">No services listed at this time.</p>
+        )}
       </div>
     </section>
   );

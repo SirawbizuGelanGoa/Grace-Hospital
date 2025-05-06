@@ -1,14 +1,10 @@
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getAboutContent } from '@/lib/mock-data'; // Import data fetching function
 
-const AboutSection = () => {
-  // In a real app, fetch this content from the database
-  const aboutContent = {
-    title: 'About MediSync Hospital',
-    description: 'MediSync Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
-    mission: 'Our mission is to improve the health of our community by delivering high-quality, accessible, and comprehensive healthcare services.',
-    vision: 'Our vision is to be the leading healthcare provider in the region, recognized for clinical excellence, patient satisfaction, and innovation.'
-  };
+const AboutSection = async () => {
+  // Fetch content from the mock data source
+  const aboutContent = await getAboutContent();
 
   return (
     <section id="about" className="py-16 bg-secondary">
@@ -32,14 +28,21 @@ const AboutSection = () => {
               </div>
             </div>
             <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-md">
-              <Image
-                src="https://picsum.photos/600/400"
-                alt="Diverse team of doctors"
-                layout="fill"
-                objectFit="cover"
-                quality={75}
-                data-ai-hint="doctors team"
-              />
+              {aboutContent.imageUrl && (
+                 <Image
+                  src={aboutContent.imageUrl}
+                  alt="About MediSync Hospital Image" // More descriptive alt text
+                  layout="fill"
+                  objectFit="cover"
+                  quality={75}
+                  data-ai-hint={aboutContent.imageHint || 'hospital staff'} // Use hint from data or default
+                 />
+              )}
+              {!aboutContent.imageUrl && (
+                 <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
+                   Image Placeholder
+                 </div>
+              )}
             </div>
           </CardContent>
         </Card>
