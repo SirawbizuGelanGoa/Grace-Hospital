@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 disabled={isLoading}
-                // Removed placeholder="admin"
+                // Removed placeholder
               />
             </div>
             <div className="space-y-2">
@@ -92,7 +92,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                 // Removed placeholder="password123"
+                 // Removed placeholder
               />
             </div>
             <Button type="submit" className="w-full" variant="primary" disabled={isLoading}>

@@ -16,10 +16,11 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIcon, Newspaper, Phone } from 'lucide-react';
+import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIcon, Newspaper, Phone, ClipboardList } from 'lucide-react'; // Correctly import ClipboardList if it exists or use an alternative
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from '@/components/ui/skeleton';
-import DynamicIcon from '@/lib/icons'; // Use DynamicIcon for potential future icon needs
+// Assuming DynamicIcon can handle 'ClipboardList' or a suitable alternative
+import DynamicIcon from '@/lib/icons';
 
 // Very basic auth check using sessionStorage (NOT SECURE FOR PRODUCTION)
 const checkAuth = () => {
@@ -127,7 +128,7 @@ export default function AdminLayout({
              </SidebarMenuItem>
               <SidebarMenuItem>
                <SidebarMenuButton href="/admin/manage/departments" isActive={pathname.startsWith('/admin/manage/departments')} tooltip="Manage Departments">
-                 {/* Using a more appropriate icon */}
+                 {/* Using DynamicIcon to ensure it renders */}
                   <DynamicIcon name="ClipboardList" className="h-4 w-4 shrink-0" />
                   Manage Departments
                </SidebarMenuButton>
