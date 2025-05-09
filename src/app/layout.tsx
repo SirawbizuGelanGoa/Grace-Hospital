@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'MediSync Hospital', // Updated title
-  description: 'Comprehensive healthcare services by MediSync Hospital.', // Updated description
+  title: 'Grace Hospital', // Updated title
+  description: 'Comprehensive healthcare services by Grace Hospital.', // Updated description
 };
 
 export default function RootLayout({
@@ -32,3 +32,4 @@ export default function RootLayout({
     </html>
   );
 }
+

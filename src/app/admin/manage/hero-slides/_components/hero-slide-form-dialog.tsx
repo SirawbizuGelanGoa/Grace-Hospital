@@ -92,8 +92,6 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
       let savedSlide: HeroSlide | null;
       const dataToSave = {
         ...data,
-        // Ensure optional fields that are empty strings are treated as undefined if necessary by backend
-        // For this mock, empty strings are fine.
       };
 
       if (isEditing && slide) {

@@ -26,10 +26,10 @@ export default function TermsOfServicePage() {
              <p><em>Last Updated: {lastUpdatedDate ? lastUpdatedDate : <Skeleton className="inline-block h-4 w-24" />}</em></p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">1. Acceptance of Terms</h2>
-             <p>By accessing or using the MediSync Hospital website ([Your Website URL]) or its services, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you may not access the service.</p>
+             <p>By accessing or using the Grace Hospital website ([Your Website URL]) or its services, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you may not access the service.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">2. Use of Website</h2>
-             <p>This website is intended to provide information about MediSync Hospital and its services. The information provided is for general informational purposes only and does not constitute medical advice. You should always consult with a qualified healthcare provider for any health concerns or before making any decisions related to your health or treatment.</p>
+             <p>This website is intended to provide information about Grace Hospital and its services. The information provided is for general informational purposes only and does not constitute medical advice. You should always consult with a qualified healthcare provider for any health concerns or before making any decisions related to your health or treatment.</p>
              <p>You agree not to use the website:</p>
               <ul className="list-disc list-inside">
                 <li>In any way that violates any applicable local, national, or international law or regulation.</li>
@@ -39,14 +39,14 @@ export default function TermsOfServicePage() {
               </ul>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">3. Intellectual Property</h2>
-             <p>The website and its original content, features, and functionality are and will remain the exclusive property of MediSync Hospital and its licensors. The content is protected by copyright, trademark, and other laws.</p>
+             <p>The website and its original content, features, and functionality are and will remain the exclusive property of Grace Hospital and its licensors. The content is protected by copyright, trademark, and other laws.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">4. Links to Other Websites</h2>
-             <p>Our Service may contain links to third-party web sites or services that are not owned or controlled by MediSync Hospital. We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party web sites or services. You further acknowledge and agree that MediSync Hospital shall not be responsible or liable, directly or indirectly, for any damage or loss caused or alleged to be caused by or in connection with use of or reliance on any such content, goods or services available on or through any such web sites or services.</p>
+             <p>Our Service may contain links to third-party web sites or services that are not owned or controlled by Grace Hospital. We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party web sites or services. You further acknowledge and agree that Grace Hospital shall not be responsible or liable, directly or indirectly, for any damage or loss caused or alleged to be caused by or in connection with use of or reliance on any such content, goods or services available on or through any such web sites or services.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">5. Disclaimer of Warranties; Limitation of Liability</h2>
-             <p>The website is provided on an "AS IS" and "AS AVAILABLE" basis. MediSync Hospital makes no representations or warranties of any kind, express or implied, as to the operation of the website or the information, content, or materials included on the website. You expressly agree that your use of the website is at your sole risk.</p>
-             <p>In no event shall MediSync Hospital, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
+             <p>The website is provided on an "AS IS" and "AS AVAILABLE" basis. Grace Hospital makes no representations or warranties of any kind, express or implied, as to the operation of the website or the information, content, or materials included on the website. You expressly agree that your use of the website is at your sole risk.</p>
+             <p>In no event shall Grace Hospital, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">6. Governing Law</h2>
              <p>These Terms shall be governed and construed in accordance with the laws of [Your State/Country], without regard to its conflict of law provisions.</p>

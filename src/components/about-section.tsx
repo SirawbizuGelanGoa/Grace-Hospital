@@ -11,7 +11,7 @@ const AboutSection = async () => {
       <div className="container mx-auto px-4">
         <Card className="overflow-hidden shadow-lg">
            <CardHeader className="bg-primary text-primary-foreground">
-             <CardTitle className="text-3xl font-bold text-center">{aboutContent.title}</CardTitle>
+             <CardTitle className="text-3xl font-bold text-center">{aboutContent.title || 'About Us'}</CardTitle>
            </CardHeader>
            <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center">
             <div>
@@ -31,7 +31,7 @@ const AboutSection = async () => {
               {aboutContent.imageUrl && (
                  <Image
                   src={aboutContent.imageUrl}
-                  alt="About MediSync Hospital Image" // More descriptive alt text
+                  alt={`About ${aboutContent.title || 'Grace Hospital'} Image`}
                   layout="fill"
                   objectFit="cover"
                   quality={75}

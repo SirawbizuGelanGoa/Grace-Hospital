@@ -155,6 +155,12 @@ export default function AdminLayout({
                   Manage Contact
                </SidebarMenuButton>
              </SidebarMenuItem>
+             <SidebarMenuItem>
+               <SidebarMenuButton href="/admin/manage/settings" isActive={pathname === '/admin/manage/settings'} tooltip="Site Settings">
+                 <Settings />
+                  Site Settings
+               </SidebarMenuButton>
+             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>

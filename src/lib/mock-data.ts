@@ -1,6 +1,11 @@
 // Simulate a simple in-memory database
 // In a real app, this would interact with an actual database.
 
+export type SiteSettings = {
+    hospitalName: string;
+    logoUrl?: string;
+};
+
 export type Service = {
   id: string;
   name: string;
@@ -69,13 +74,17 @@ export type HeroSlide = {
 
 
 let mockDb = {
+    siteSettings: {
+        hospitalName: 'Grace Hospital',
+        logoUrl: '', // Example: 'https://example.com/logo.png' - Admin can set this
+    } as SiteSettings,
     heroSlides: [
         {
             id: 'hs1',
             src: 'https://picsum.photos/1200/800?random=hero1',
             alt: 'State-of-the-art medical facility',
             hint: 'modern hospital',
-            title: 'Welcome to MediSync',
+            title: 'Welcome to Grace Hospital', // Updated Name
             subtitle: 'Your Health, Our Priority. Providing compassionate care.',
             ctaLink: '#contact',
             ctaText: 'Book Appointment',
@@ -102,8 +111,8 @@ let mockDb = {
         },
     ] as HeroSlide[],
     about: {
-        title: 'About MediSync Hospital',
-        description: 'MediSync Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
+        title: 'About Grace Hospital', // Updated Name
+        description: 'Grace Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
         mission: 'Our mission is to improve the health of our community by delivering high-quality, accessible, and comprehensive healthcare services.',
         vision: 'Our vision is to be the leading healthcare provider in the region, recognized for clinical excellence, patient satisfaction, and innovation.',
         imageUrl: 'https://picsum.photos/600/400?random=0',
@@ -143,14 +152,14 @@ let mockDb = {
         { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=8', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' },
     ] as GalleryItem[],
     newsEvents: [
-         { id: 'n1', title: 'MediSync Opens New Cardiology Wing', date: '2024-07-15T00:00:00.000Z', summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', image: 'https://picsum.photos/400/250?random=9', link: '/news/new-cardiology-wing', hint: 'hospital wing' },
+         { id: 'n1', title: 'Grace Hospital Opens New Cardiology Wing', date: '2024-07-15T00:00:00.000Z', summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', image: 'https://picsum.photos/400/250?random=9', link: '/news/new-cardiology-wing', hint: 'hospital wing' },
          { id: 'n2', title: 'Free Health Check-up Camp', date: '2024-07-20T00:00:00.000Z', summary: 'Join us for a free health screening event next Saturday. Limited slots available.', image: 'https://picsum.photos/400/250?random=10', link: '/news/health-checkup-camp', hint: 'health camp' },
-         { id: 'n3', title: 'Dr. Emily Carter Joins MediSync', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=11', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
+         { id: 'n3', title: 'Dr. Emily Carter Joins Grace Hospital', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=11', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
      ] as NewsEvent[],
     contact: {
-        address: '123 MediSync Way, Healthville, ST 54321',
+        address: '123 Grace Hospital Way, Healthville, ST 54321', // Updated Name
         phone: '(123) 456-7890',
-        email: 'info@medisync.hospital',
+        email: 'info@gracehospital.example', // Updated email domain
         mapPlaceholder: 'Map Placeholder - Coordinates or Embed URL would go here',
     } as ContactInfo,
 };
@@ -164,6 +173,19 @@ const SIMULATED_DELAY = 50; // ms
 // Function to generate unique IDs (very basic)
 const generateId = () => Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
+// --- Site Settings ---
+export const getSiteSettings = async (): Promise<SiteSettings> => {
+    await delay(SIMULATED_DELAY);
+    return JSON.parse(JSON.stringify(mockDb.siteSettings));
+};
+
+export const updateSiteSettings = async (data: Partial<SiteSettings>): Promise<SiteSettings> => {
+    await delay(SIMULATED_DELAY);
+    mockDb.siteSettings = { ...mockDb.siteSettings, ...data };
+    return JSON.parse(JSON.stringify(mockDb.siteSettings));
+};
+
+
 // --- Hero Slides ---
 export const getHeroSlides = async (): Promise<HeroSlide[]> => {
     await delay(SIMULATED_DELAY);
@@ -173,7 +195,7 @@ export const getHeroSlides = async (): Promise<HeroSlide[]> => {
 export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<HeroSlide> => {
     await delay(SIMULATED_DELAY);
     const newSlide = { ...data, id: generateId() };
-    mockDb.heroSlides.push(newSlide); // Add to the end by default, reordering might be a separate feature
+    mockDb.heroSlides.push(newSlide);
     return JSON.parse(JSON.stringify(newSlide));
 };
 
@@ -196,7 +218,7 @@ export const deleteHeroSlide = async (id: string): Promise<boolean> => {
 // --- About ---
 export const getAboutContent = async (): Promise<AboutContent> => {
     await delay(SIMULATED_DELAY);
-    return JSON.parse(JSON.stringify(mockDb.about)); // Return a copy
+    return JSON.parse(JSON.stringify(mockDb.about)); 
 };
 
 export const updateAboutContent = async (data: AboutContent): Promise<AboutContent> => {
@@ -208,7 +230,7 @@ export const updateAboutContent = async (data: AboutContent): Promise<AboutConte
 // --- Services ---
 export const getServices = async (): Promise<Service[]> => {
     await delay(SIMULATED_DELAY);
-    return JSON.parse(JSON.stringify(mockDb.services)); // Return a copy
+    return JSON.parse(JSON.stringify(mockDb.services)); 
 };
 
 export const getServiceById = async (id: string): Promise<Service | undefined> => {
@@ -352,7 +374,6 @@ export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<News
     await delay(SIMULATED_DELAY);
     const newEvent = { ...data, id: generateId() };
     mockDb.newsEvents.push(newEvent);
-    // Sort by date descending after adding
     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return JSON.parse(JSON.stringify(newEvent));
 };
@@ -362,7 +383,6 @@ export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 
     const index = mockDb.newsEvents.findIndex(n => n.id === id);
     if (index === -1) return null;
     mockDb.newsEvents[index] = { ...mockDb.newsEvents[index], ...data };
-     // Sort by date descending after update
      mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return JSON.parse(JSON.stringify(mockDb.newsEvents[index]));
 };
@@ -388,12 +408,10 @@ export const updateContactInfo = async (data: ContactInfo): Promise<ContactInfo>
 };
 
 // --- Authentication ---
-// Extremely basic mock authentication. DO NOT USE IN PRODUCTION.
-// Replace with a proper authentication library (e.g., NextAuth.js, Firebase Auth, Clerk).
 const MOCK_ADMIN_USERNAME = 'admin';
-const MOCK_ADMIN_PASSWORD = 'password123'; // Store hashed passwords in a real app
+const MOCK_ADMIN_PASSWORD = 'password123'; 
 
 export const verifyAdminCredentials = async (username?: string, password?: string): Promise<boolean> => {
-    await delay(SIMULATED_DELAY * 2); // Simulate slightly longer delay for auth
+    await delay(SIMULATED_DELAY * 2); 
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
 }

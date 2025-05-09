@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
              <p><em>Last Updated: {lastUpdatedDate ? lastUpdatedDate : <Skeleton className="inline-block h-4 w-24" />}</em></p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">Introduction</h2>
-             <p>MediSync Hospital ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website [Your Website URL] or use our services.</p>
+             <p>Grace Hospital ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website [Your Website URL] or use our services.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">Information We Collect</h2>
              <p>We may collect personal information such as:</p>

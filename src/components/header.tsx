@@ -2,19 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Hospital, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getSiteSettings, SiteSettings } from '@/lib/mock-data'; // Import getSiteSettings
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
+
+    const fetchSettings = async () => {
+      try {
+        setIsLoading(true);
+        const settings = await getSiteSettings();
+        setSiteSettings(settings);
+      } catch (error) {
+        console.error("Failed to fetch site settings:", error);
+        // Fallback settings if fetch fails
+        setSiteSettings({ hospitalName: 'Grace Hospital', logoUrl: '' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -36,6 +57,9 @@ const Header = () => {
     { href: '/#contact', label: 'Contact' },
   ];
 
+  const hospitalName = siteSettings?.hospitalName || 'Grace Hospital';
+  const logoUrl = siteSettings?.logoUrl;
+
   return (
     <header
       className={cn(
@@ -45,10 +69,23 @@ const Header = () => {
     >
       <nav className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          {/* Logo */}
+          {/* Logo and Hospital Name */}
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary-foreground" onClick={closeMenu}>
-            <Hospital className="h-6 w-6" />
-            MediSync
+            {isLoading ? (
+              <div className="h-8 w-8 md:h-10 md:w-10 bg-primary-foreground/20 rounded-sm animate-pulse" />
+            ) : logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt={`${hospitalName} Logo`}
+                width={40}
+                height={40}
+                className="h-8 w-8 md:h-10 md:w-10 rounded-sm object-contain"
+                data-ai-hint="hospital logo"
+              />
+            ) : (
+              <Hospital className="h-6 w-6 md:h-7 md:w-7" />
+            )}
+            {isLoading ? <div className="h-6 w-32 bg-primary-foreground/20 rounded animate-pulse" /> : hospitalName}
           </Link>
 
           {/* Desktop Navigation */}
