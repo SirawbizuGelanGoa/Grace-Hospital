@@ -1,8 +1,18 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PrivacyPolicyPage() {
+  const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastUpdatedDate(new Date().toLocaleDateString());
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
        <Header />
@@ -12,7 +22,7 @@ export default function PrivacyPolicyPage() {
              <CardTitle className="text-3xl font-bold text-primary">Privacy Policy</CardTitle>
            </CardHeader>
            <CardContent className="prose max-w-none">
-             <p><em>Last Updated: {new Date().toLocaleDateString()}</em></p>
+             <p><em>Last Updated: {lastUpdatedDate ? lastUpdatedDate : <Skeleton className="inline-block h-4 w-24" />}</em></p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">Introduction</h2>
              <p>MediSync Hospital ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website [Your Website URL] or use our services.</p>
