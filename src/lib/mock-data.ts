@@ -17,8 +17,11 @@ export type Service = {
 export type Facility = {
     id: string;
     name: string;
-    description: string;
+    description: string; // Short description for the card
     iconName: string;
+    imageUrl?: string; // Image for the modal
+    imageHint?: string; // Optional AI hint for the image
+    detailedDescription: string; // Detailed description for the modal
 };
 
 export type Department = {
@@ -116,8 +119,8 @@ let mockDb = {
         description: 'Grace Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
         mission: 'Our mission is to improve the health of our community by delivering high-quality, accessible, and comprehensive healthcare services.',
         vision: 'Our vision is to be the leading healthcare provider in the region, recognized for clinical excellence, patient satisfaction, and innovation.',
-        imageUrl: 'https://picsum.photos/600/400?random=0',
-        imageHint: 'doctors team',
+        imageUrl: 'https://picsum.photos/600/400?random=aboutGrace',
+        imageHint: 'hospital staff',
     } as AboutContent,
     services: [
         { id: '1', name: 'General Medicine', description: 'Comprehensive care for adults and children.', detailedDescription: 'Our General Medicine department provides a wide range of services including routine check-ups, preventive care, management of chronic illnesses, and treatment for acute medical conditions. We focus on holistic patient health.', iconName: 'Stethoscope' },
@@ -128,34 +131,34 @@ let mockDb = {
         { id: '6', name: 'Laboratory Services', description: 'Accurate diagnostic testing.', detailedDescription: 'Our state-of-the-art laboratory offers a full range of diagnostic tests, providing accurate and timely results to support patient care. We adhere to the highest standards of quality and precision.', iconName: 'Microscope' },
     ] as Service[],
     facilities: [
-        { id: '1', name: 'Modern Patient Rooms', description: 'Comfortable and well-equipped private and semi-private rooms.', iconName: 'BedDouble' },
-        { id: '2', name: 'Advanced Laboratory', description: 'State-of-the-art diagnostic testing facilities.', iconName: 'FlaskConical' },
-        { id: '3', name: 'Intensive Care Unit (ICU)', description: 'Specialized care for critically ill patients with continuous monitoring.', iconName: 'Monitor' },
-        { id: '4', name: 'Outpatient Clinics', description: 'Convenient access to specialist consultations and follow-ups.', iconName: 'Stethoscope' },
-        { id: '5', name: 'Emergency Department', description: '24/7 emergency care services with experienced staff.', iconName: 'Syringe' },
+        { id: 'f1', name: 'Modern Patient Rooms', description: 'Comfortable and well-equipped for recovery.', iconName: 'BedDouble', imageUrl: 'https://picsum.photos/600/400?random=facility1', imageHint: 'patient room', detailedDescription: 'Our modern patient rooms are designed for comfort and recovery. Each room features an adjustable bed, private bathroom, television, and a call system for immediate assistance. We offer both private and semi-private options to suit patient needs and preferences, ensuring a restful environment for healing.' },
+        { id: 'f2', name: 'Advanced Laboratory', description: 'State-of-the-art diagnostic testing.', iconName: 'FlaskConical', imageUrl: 'https://picsum.photos/600/400?random=facility2', imageHint: 'science lab', detailedDescription: 'Equipped with the latest technology, our advanced laboratory provides a comprehensive range of diagnostic tests. Our skilled technicians and pathologists work to deliver accurate and timely results, crucial for effective treatment planning and patient care.' },
+        { id: 'f3', name: 'Intensive Care Unit (ICU)', description: 'Specialized critical care 24/7.', iconName: 'Activity', imageUrl: 'https://picsum.photos/600/400?random=facility3', imageHint: 'icu room', detailedDescription: 'The Intensive Care Unit (ICU) at Grace Hospital is a specialized facility dedicated to patients requiring constant monitoring and intensive medical care. Our ICU is staffed by critical care specialists and equipped with advanced life support systems to manage complex cases.' },
+        { id: 'f4', name: 'Outpatient Clinics', description: 'Convenient specialist consultations.', iconName: 'Stethoscope', imageUrl: 'https://picsum.photos/600/400?random=facility4', imageHint: 'doctor office', detailedDescription: 'Our Outpatient Clinics offer easy access to a variety of medical specialists for consultations, follow-up appointments, and minor procedures. We aim to provide timely and efficient care in a comfortable setting, reducing the need for hospital admission when possible.' },
+        { id: 'f5', name: 'Emergency Department', description: '24/7 immediate medical attention.', iconName: 'Hospital', imageUrl: 'https://picsum.photos/600/400?random=facility5', imageHint: 'emergency room', detailedDescription: 'Grace Hospital\'s Emergency Department operates around the clock, providing immediate medical attention for urgent and life-threatening conditions. Our experienced emergency physicians, nurses, and support staff are prepared to handle a wide range of medical emergencies with speed and expertise.' },
     ] as Facility[],
     departments: [
-        { id: '1', name: 'Cardiology', description: 'Specializing in heart and vascular system disorders. We offer advanced diagnostics, treatments, and preventive care.', iconName: 'HeartPulse' },
-        { id: '2', name: 'Neurology', description: 'Focused on the diagnosis and treatment of nervous system disorders, including the brain, spinal cord, and nerves.', iconName: 'Brain' },
-        { id: '3', name: 'Orthopedics', description: 'Providing comprehensive care for musculoskeletal conditions, including bones, joints, ligaments, tendons, and muscles.', iconName: 'Bone' },
-        { id: '4', name: 'Pediatrics', description: 'Dedicated to the medical care of infants, children, and adolescents.', iconName: 'Baby' },
-        { id: '5', name: 'General Surgery', description: 'Offering a wide range of surgical procedures performed by experienced surgeons using modern techniques.', iconName: 'Stethoscope' },
-        { id: '6', name: 'Oncology', description: 'Comprehensive cancer care including diagnosis, treatment, and support services.', iconName: 'ShieldCheck' },
+        { id: 'd1', name: 'Cardiology', description: 'Specializing in heart and vascular system disorders. We offer advanced diagnostics, treatments, and preventive care.', iconName: 'HeartPulse' },
+        { id: 'd2', name: 'Neurology', description: 'Focused on the diagnosis and treatment of nervous system disorders, including the brain, spinal cord, and nerves.', iconName: 'Brain' },
+        { id: 'd3', name: 'Orthopedics', description: 'Providing comprehensive care for musculoskeletal conditions, including bones, joints, ligaments, tendons, and muscles.', iconName: 'Bone' },
+        { id: 'd4', name: 'Pediatrics', description: 'Dedicated to the medical care of infants, children, and adolescents.', iconName: 'Baby' },
+        { id: 'd5', name: 'General Surgery', description: 'Offering a wide range of surgical procedures performed by experienced surgeons using modern techniques.', iconName: 'Scissors' },
+        { id: 'd6', name: 'Oncology', description: 'Comprehensive cancer care including diagnosis, treatment, and support services.', iconName: 'ShieldCheck' },
     ] as Department[],
     gallery: [
-        { id: 'p1', type: 'photo', src: 'https://picsum.photos/400/300?random=1', alt: 'Hospital lobby', hint: 'hospital lobby' },
-        { id: 'p2', type: 'photo', src: 'https://picsum.photos/400/300?random=2', alt: 'Modern operating room', hint: 'operating room' },
-        { id: 'p3', type: 'photo', src: 'https://picsum.photos/400/300?random=3', alt: 'Patient room interior', hint: 'patient room' },
-        { id: 'p4', type: 'photo', src: 'https://picsum.photos/400/300?random=4', alt: 'Hospital garden area', hint: 'hospital garden' },
-        { id: 'p5', type: 'photo', src: 'https://picsum.photos/400/300?random=5', alt: 'Doctors consulting', hint: 'doctors consulting' },
-        { id: 'p6', type: 'photo', src: 'https://picsum.photos/400/300?random=6', alt: 'Advanced medical equipment', hint: 'medical equipment' },
-        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=7', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' },
-        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=8', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' },
+        { id: 'p1', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery1', alt: 'Hospital lobby', hint: 'hospital lobby' },
+        { id: 'p2', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery2', alt: 'Modern operating room', hint: 'operating room' },
+        { id: 'p3', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery3', alt: 'Patient room interior', hint: 'patient room' },
+        { id: 'p4', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery4', alt: 'Hospital garden area', hint: 'hospital garden' },
+        { id: 'p5', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery5', alt: 'Doctors consulting', hint: 'doctors consulting' },
+        { id: 'p6', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery6', alt: 'Advanced medical equipment', hint: 'medical equipment' },
+        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' },
+        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' },
     ] as GalleryItem[],
     newsEvents: [
-         { id: 'n1', title: 'Grace Hospital Opens New Cardiology Wing', date: '2024-07-15T00:00:00.000Z', summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', image: 'https://picsum.photos/400/250?random=9', link: '/news/new-cardiology-wing', hint: 'hospital wing' },
-         { id: 'n2', title: 'Free Health Check-up Camp', date: '2024-07-20T00:00:00.000Z', summary: 'Join us for a free health screening event next Saturday. Limited slots available.', image: 'https://picsum.photos/400/250?random=10', link: '/news/health-checkup-camp', hint: 'health camp' },
-         { id: 'n3', title: 'Dr. Emily Carter Joins Grace Hospital', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=11', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
+         { id: 'n1', title: 'Grace Hospital Opens New Cardiology Wing', date: '2024-07-15T00:00:00.000Z', summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', image: 'https://picsum.photos/400/250?random=news1', link: '/news/new-cardiology-wing', hint: 'hospital wing' },
+         { id: 'n2', title: 'Free Health Check-up Camp', date: '2024-07-20T00:00:00.000Z', summary: 'Join us for a free health screening event next Saturday. Limited slots available.', image: 'https://picsum.photos/400/250?random=news2', link: '/news/health-checkup-camp', hint: 'health camp' },
+         { id: 'n3', title: 'Dr. Emily Carter Joins Grace Hospital', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=news3', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
      ] as NewsEvent[],
     contact: {
         address: '123 Grace Hospital Way, Healthville, ST 54321', 
