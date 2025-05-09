@@ -56,8 +56,51 @@ export type ContactInfo = {
     mapPlaceholder?: string; // Or store actual map coordinates/embed URL
 };
 
+export type HeroSlide = {
+    id: string;
+    src: string;
+    alt: string;
+    hint?: string; // Optional AI hint for image search
+    title?: string; // Optional title overlay
+    subtitle?: string; // Optional subtitle overlay
+    ctaLink?: string; // Optional call to action link
+    ctaText?: string; // Optional call to action button text
+};
+
 
 let mockDb = {
+    heroSlides: [
+        {
+            id: 'hs1',
+            src: 'https://picsum.photos/1200/800?random=hero1',
+            alt: 'State-of-the-art medical facility',
+            hint: 'modern hospital',
+            title: 'Welcome to MediSync',
+            subtitle: 'Your Health, Our Priority. Providing compassionate care.',
+            ctaLink: '#contact',
+            ctaText: 'Book Appointment',
+        },
+        {
+            id: 'hs2',
+            src: 'https://picsum.photos/1200/800?random=hero2',
+            alt: 'Dedicated medical team',
+            hint: 'doctors team',
+            title: 'Expert Care, Always',
+            subtitle: 'Meet our world-class specialists.',
+            ctaLink: '#departments',
+            ctaText: 'Our Departments',
+        },
+        {
+            id: 'hs3',
+            src: 'https://picsum.photos/1200/800?random=hero3',
+            alt: 'Advanced technology in healthcare',
+            hint: 'medical technology',
+            title: 'Advanced Medical Technology',
+            subtitle: 'Utilizing the latest innovations for better outcomes.',
+            ctaLink: '#facilities',
+            ctaText: 'Explore Facilities',
+        },
+    ] as HeroSlide[],
     about: {
         title: 'About MediSync Hospital',
         description: 'MediSync Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
@@ -79,15 +122,15 @@ let mockDb = {
         { id: '2', name: 'Advanced Laboratory', description: 'State-of-the-art diagnostic testing facilities.', iconName: 'FlaskConical' },
         { id: '3', name: 'Intensive Care Unit (ICU)', description: 'Specialized care for critically ill patients with continuous monitoring.', iconName: 'Monitor' },
         { id: '4', name: 'Outpatient Clinics', description: 'Convenient access to specialist consultations and follow-ups.', iconName: 'Stethoscope' },
-        { id: '5', name: 'Emergency Department', description: '24/7 emergency care services with experienced staff.', iconName: 'Syringe' }, // Consider Ambulance icon if available and appropriate
+        { id: '5', name: 'Emergency Department', description: '24/7 emergency care services with experienced staff.', iconName: 'Syringe' },
     ] as Facility[],
     departments: [
         { id: '1', name: 'Cardiology', description: 'Specializing in heart and vascular system disorders. We offer advanced diagnostics, treatments, and preventive care.', iconName: 'HeartPulse' },
         { id: '2', name: 'Neurology', description: 'Focused on the diagnosis and treatment of nervous system disorders, including the brain, spinal cord, and nerves.', iconName: 'Brain' },
         { id: '3', name: 'Orthopedics', description: 'Providing comprehensive care for musculoskeletal conditions, including bones, joints, ligaments, tendons, and muscles.', iconName: 'Bone' },
         { id: '4', name: 'Pediatrics', description: 'Dedicated to the medical care of infants, children, and adolescents.', iconName: 'Baby' },
-        { id: '5', name: 'General Surgery', description: 'Offering a wide range of surgical procedures performed by experienced surgeons using modern techniques.', iconName: 'Stethoscope' }, // Consider a different icon like 'Activity' or a custom SVG
-        { id: '6', name: 'Oncology', description: 'Comprehensive cancer care including diagnosis, treatment, and support services.', iconName: 'ShieldCheck' }, // Placeholder icon
+        { id: '5', name: 'General Surgery', description: 'Offering a wide range of surgical procedures performed by experienced surgeons using modern techniques.', iconName: 'Stethoscope' },
+        { id: '6', name: 'Oncology', description: 'Comprehensive cancer care including diagnosis, treatment, and support services.', iconName: 'ShieldCheck' },
     ] as Department[],
     gallery: [
         { id: 'p1', type: 'photo', src: 'https://picsum.photos/400/300?random=1', alt: 'Hospital lobby', hint: 'hospital lobby' },
@@ -120,6 +163,35 @@ const SIMULATED_DELAY = 50; // ms
 
 // Function to generate unique IDs (very basic)
 const generateId = () => Date.now().toString() + Math.random().toString(36).substring(2, 9);
+
+// --- Hero Slides ---
+export const getHeroSlides = async (): Promise<HeroSlide[]> => {
+    await delay(SIMULATED_DELAY);
+    return JSON.parse(JSON.stringify(mockDb.heroSlides));
+};
+
+export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<HeroSlide> => {
+    await delay(SIMULATED_DELAY);
+    const newSlide = { ...data, id: generateId() };
+    mockDb.heroSlides.push(newSlide); // Add to the end by default, reordering might be a separate feature
+    return JSON.parse(JSON.stringify(newSlide));
+};
+
+export const updateHeroSlide = async (id: string, data: Partial<Omit<HeroSlide, 'id'>>): Promise<HeroSlide | null> => {
+    await delay(SIMULATED_DELAY);
+    const index = mockDb.heroSlides.findIndex(s => s.id === id);
+    if (index === -1) return null;
+    mockDb.heroSlides[index] = { ...mockDb.heroSlides[index], ...data };
+    return JSON.parse(JSON.stringify(mockDb.heroSlides[index]));
+};
+
+export const deleteHeroSlide = async (id: string): Promise<boolean> => {
+    await delay(SIMULATED_DELAY);
+    const initialLength = mockDb.heroSlides.length;
+    mockDb.heroSlides = mockDb.heroSlides.filter(s => s.id !== id);
+    return mockDb.heroSlides.length < initialLength;
+};
+
 
 // --- About ---
 export const getAboutContent = async (): Promise<AboutContent> => {

@@ -16,10 +16,9 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIcon, Newspaper, Phone, ClipboardList } from 'lucide-react'; // Correctly import ClipboardList if it exists or use an alternative
+import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIconLucide, Newspaper, Phone, ClipboardList, Rows } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from '@/components/ui/skeleton';
-// Assuming DynamicIcon can handle 'ClipboardList' or a suitable alternative
 import DynamicIcon from '@/lib/icons';
 
 // Very basic auth check using sessionStorage (NOT SECURE FOR PRODUCTION)
@@ -109,6 +108,12 @@ export default function AdminLayout({
                </SidebarMenuButton>
              </SidebarMenuItem>
              <SidebarMenuItem>
+               <SidebarMenuButton href="/admin/manage/hero-slides" isActive={pathname.startsWith('/admin/manage/hero-slides')} tooltip="Manage Hero Slides">
+                 <Rows /> {/* Using Rows icon for slides/carousel */}
+                  Manage Hero Slides
+               </SidebarMenuButton>
+             </SidebarMenuItem>
+             <SidebarMenuItem>
                <SidebarMenuButton href="/admin/manage/about" isActive={pathname === '/admin/manage/about'} tooltip="Manage About Section">
                  <Info />
                   Manage About
@@ -128,14 +133,13 @@ export default function AdminLayout({
              </SidebarMenuItem>
               <SidebarMenuItem>
                <SidebarMenuButton href="/admin/manage/departments" isActive={pathname.startsWith('/admin/manage/departments')} tooltip="Manage Departments">
-                 {/* Using DynamicIcon to ensure it renders */}
                   <DynamicIcon name="ClipboardList" className="h-4 w-4 shrink-0" />
                   Manage Departments
                </SidebarMenuButton>
              </SidebarMenuItem>
               <SidebarMenuItem>
                <SidebarMenuButton href="/admin/manage/gallery" isActive={pathname.startsWith('/admin/manage/gallery')} tooltip="Manage Gallery">
-                 <ImageIcon />
+                 <ImageIconLucide />
                   Manage Gallery
                </SidebarMenuButton>
              </SidebarMenuItem>
@@ -151,24 +155,10 @@ export default function AdminLayout({
                   Manage Contact
                </SidebarMenuButton>
              </SidebarMenuItem>
-             {/* Add more links for other sections if needed */}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            {/* Example Footer Items (Commented out as per original) */}
-            {/* <SidebarMenuItem>
-               <SidebarMenuButton href="/admin/settings" isActive={pathname === '/admin/settings'} tooltip="Settings">
-                 <Settings />
-                 Settings
-               </SidebarMenuButton>
-             </SidebarMenuItem>
-             <SidebarMenuItem>
-               <SidebarMenuButton href="/admin/profile" isActive={pathname === '/admin/profile'} tooltip="Profile">
-                 <User />
-                 Profile
-               </SidebarMenuButton>
-             </SidebarMenuItem> */}
              <SidebarMenuItem>
                  <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
                      <LogOut />
@@ -185,11 +175,10 @@ export default function AdminLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-         {/* Main content area */}
         <div className="p-4 md:p-6 lg:p-8">
            {children}
         </div>
-        <Toaster /> {/* Ensure Toaster is included for admin pages */}
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );
