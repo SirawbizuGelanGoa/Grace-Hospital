@@ -8,6 +8,7 @@ import { getSiteSettings, SiteSettings } from '@/lib/mock-data';
 const Footer = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -23,6 +24,9 @@ const Footer = () => {
       }
     };
     fetchSettings();
+    
+    // Set year on client-side to ensure consistency
+    setCurrentYear(new Date().getFullYear());
   }, []);
 
   const hospitalName = siteSettings?.hospitalName || 'Grace Hospital';
@@ -34,7 +38,9 @@ const Footer = () => {
           <Hospital className="h-5 w-5" />
           {isLoading ? <span className="animate-pulse">Loading...</span> : hospitalName}
         </div>
-        <p className="text-sm mb-4">&copy; {new Date().getFullYear()} {isLoading ? <span className="animate-pulse">Loading...</span> : hospitalName}. All rights reserved.</p>
+        <p className="text-sm mb-4">
+          &copy; {currentYear ?? new Date().getFullYear()} {isLoading ? <span className="animate-pulse">Loading...</span> : hospitalName}. All rights reserved.
+        </p>
         <div className="flex justify-center space-x-4 text-sm">
           <Link href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</Link>
           <span className="opacity-50">|</span>
