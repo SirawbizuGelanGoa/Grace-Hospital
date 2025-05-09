@@ -90,5 +90,14 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require('tailwind-scrollbar'), // For custom scrollbars if needed beyond basic CSS
+  ],
+  // Optional: Safelist custom utility classes if they are dynamically generated or not picked up by JIT
+  // safelist: [
+  //   'transform-style-preserve-3d',
+  //   'backface-hidden',
+  //   'rotate-y-180',
+  // ],
 } satisfies Config;

@@ -117,4 +117,40 @@ body {
   }
   .animate-slide-in { animation: slideIn 0.5s ease-out forwards; }
   .animate-slide-out { animation: slideOut 0.5s ease-out forwards; }
+
+  /* Flip card utilities */
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; /* For Safari */
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  /* Custom scrollbar (optional, for better aesthetics on flip card back) */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary-foreground) / 0.5) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary-foreground) / 0.5);
+    border-radius: 3px;
+    border: 1px solid transparent;
+  }
+  .scrollbar-thumb-primary-foreground\/50::-webkit-scrollbar-thumb {
+     background-color: hsl(var(--primary-foreground) / 0.5);
+  }
+   .scrollbar-track-transparent::-webkit-scrollbar-track {
+      background: transparent;
+  }
+
 }

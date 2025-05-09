@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose, // Keep DialogClose for manual closing if needed, though controlled state is preferred
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,19 +29,20 @@ import { useToast } from "@/hooks/use-toast";
 import { createService, updateService, Service } from '@/lib/mock-data';
 import DynamicIcon from '@/lib/icons';
 
-// Generate list of valid Lucide icon names (excluding certain types if necessary)
+// Generate list of valid Lucide icon names
 const availableIconNames = Object.keys(LucideIcons).filter(key =>
-    key !== 'createLucideIcon' && key !== 'LucideIcon' && typeof LucideIcons[key as keyof typeof LucideIcons] !== 'string' && !key.includes('Provider') // Exclude helper functions/types
+    key !== 'createLucideIcon' && key !== 'LucideIcon' && typeof LucideIcons[key as keyof typeof LucideIcons] !== 'string' && !key.includes('Provider')
 ).sort();
 
 
 // Define Zod schema for validation
 const serviceSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
-  description: z.string().min(10, "Description must be at least 10 characters long"),
+  description: z.string().min(10, "Short description must be at least 10 characters long").max(150, "Short description cannot exceed 150 characters"),
+  detailedDescription: z.string().min(20, "Detailed description must be at least 20 characters long"),
   iconName: z.string().refine(val => availableIconNames.includes(val), {
        message: "Please select a valid icon",
-   }), // Ensure iconName is one of the available Lucide icons
+   }),
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -50,8 +50,8 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 interface ServiceFormDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  service: Service | null; // Service data for editing, null for adding
-  onSuccess: (service: Service) => void; // Callback on successful save
+  service: Service | null;
+  onSuccess: (service: Service) => void;
 }
 
 export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSuccess }: ServiceFormDialogProps) {
@@ -59,30 +59,32 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!service;
 
-  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<ServiceFormData>({
+  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
     defaultValues: {
       name: '',
       description: '',
-      iconName: 'HelpCircle', // Default icon
+      detailedDescription: '',
+      iconName: 'HelpCircle', 
     }
   });
 
-  const selectedIconName = watch("iconName"); // Watch the iconName field for preview
+  const selectedIconName = watch("iconName"); 
 
-  // Reset form when dialog opens or service changes
   useEffect(() => {
     if (isOpen) {
       if (service) {
         reset({
             name: service.name,
             description: service.description,
-            iconName: availableIconNames.includes(service.iconName) ? service.iconName : 'HelpCircle', // Validate icon name
+            detailedDescription: service.detailedDescription,
+            iconName: availableIconNames.includes(service.iconName) ? service.iconName : 'HelpCircle',
         });
       } else {
-        reset({ // Reset to default values for adding new
+        reset({ 
             name: '',
             description: '',
+            detailedDescription: '',
             iconName: 'HelpCircle',
         });
       }
@@ -94,17 +96,14 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
     try {
        let savedService: Service | null;
        if (isEditing && service) {
-        // Update existing service
         savedService = await updateService(service.id, data);
         if (!savedService) throw new Error("Update failed");
         toast({ title: "Success", description: "Service updated successfully." });
       } else {
-        // Create new service
         savedService = await createService(data);
         toast({ title: "Success", description: "Service created successfully." });
       }
-      onSuccess(savedService); // Call the success callback
-      // setIsOpen(false); // Dialog will be closed by the parent via onSuccess -> setIsOpen(false)
+      onSuccess(savedService); 
     } catch (error) {
       toast({
         title: "Error",
@@ -116,10 +115,9 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
     }
   };
 
-  // Handle manual closing or clicking overlay
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-        reset(); // Reset form if dialog is closed without saving
+        reset(); 
     }
     setIsOpen(open);
   };
@@ -134,22 +132,25 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
             {isEditing ? 'Update the details of the service.' : 'Enter the details for the new service.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-           {/* Service Name */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="space-y-1">
             <Label htmlFor="name">Service Name</Label>
             <Input id="name" {...register("name")} disabled={isSaving} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
-          {/* Description */}
           <div className="space-y-1">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" {...register("description")} rows={4} disabled={isSaving} />
+            <Label htmlFor="description">Short Description (for card front)</Label>
+            <Textarea id="description" {...register("description")} rows={3} disabled={isSaving} />
             {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
           </div>
 
-          {/* Icon Selector */}
+           <div className="space-y-1">
+            <Label htmlFor="detailedDescription">Detailed Description (for card back)</Label>
+            <Textarea id="detailedDescription" {...register("detailedDescription")} rows={5} disabled={isSaving} />
+            {errors.detailedDescription && <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>}
+          </div>
+
            <div className="space-y-1">
              <Label htmlFor="iconName">Icon</Label>
               <Controller
@@ -168,7 +169,7 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
                        </div>
                     </SelectTrigger>
                     <SelectContent>
-                       <ScrollArea className="h-[250px]"> {/* Make dropdown scrollable */}
+                       <ScrollArea className="h-[250px]"> 
                         {availableIconNames.map((icon) => (
                           <SelectItem key={icon} value={icon}>
                              <div className="flex items-center gap-2">
@@ -185,7 +186,7 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
               {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
            </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
                  Cancel
              </Button>

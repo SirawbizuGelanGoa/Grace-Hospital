@@ -9,7 +9,8 @@ export type SiteSettings = {
 export type Service = {
   id: string;
   name: string;
-  description: string;
+  description: string; // Short description for the front of the card
+  detailedDescription: string; // Longer description for the back of the card
   iconName: string; // Store icon name (from lucide-react) instead of component
 };
 
@@ -84,7 +85,7 @@ let mockDb = {
             src: 'https://picsum.photos/1200/800?random=hero1',
             alt: 'State-of-the-art medical facility',
             hint: 'modern hospital',
-            title: 'Welcome to Grace Hospital', // Updated Name
+            title: 'Welcome to Grace Hospital', 
             subtitle: 'Your Health, Our Priority. Providing compassionate care.',
             ctaLink: '#contact',
             ctaText: 'Book Appointment',
@@ -111,7 +112,7 @@ let mockDb = {
         },
     ] as HeroSlide[],
     about: {
-        title: 'About Grace Hospital', // Updated Name
+        title: 'About Grace Hospital', 
         description: 'Grace Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
         mission: 'Our mission is to improve the health of our community by delivering high-quality, accessible, and comprehensive healthcare services.',
         vision: 'Our vision is to be the leading healthcare provider in the region, recognized for clinical excellence, patient satisfaction, and innovation.',
@@ -119,12 +120,12 @@ let mockDb = {
         imageHint: 'doctors team',
     } as AboutContent,
     services: [
-        { id: '1', name: 'General Medicine', description: 'Comprehensive care for adults and children.', iconName: 'Stethoscope' },
-        { id: '2', name: 'Cardiology', description: 'Expert heart care and diagnostics.', iconName: 'HeartPulse' },
-        { id: '3', name: 'Neurology', description: 'Specialized treatment for brain and nerve disorders.', iconName: 'Brain' },
-        { id: '4', name: 'Orthopedics', description: 'Advanced care for bones and joints.', iconName: 'Bone' },
-        { id: '5', name: 'Pediatrics', description: 'Dedicated healthcare for infants and children.', iconName: 'Baby' },
-        { id: '6', name: 'Laboratory Services', description: 'Accurate diagnostic testing.', iconName: 'Microscope' },
+        { id: '1', name: 'General Medicine', description: 'Comprehensive care for adults and children.', detailedDescription: 'Our General Medicine department provides a wide range of services including routine check-ups, preventive care, management of chronic illnesses, and treatment for acute medical conditions. We focus on holistic patient health.', iconName: 'Stethoscope' },
+        { id: '2', name: 'Cardiology', description: 'Expert heart care and diagnostics.', detailedDescription: 'The Cardiology department specializes in the diagnosis and treatment of heart diseases and cardiovascular conditions. We offer advanced diagnostic tools like ECG, echocardiography, and stress tests, along with personalized treatment plans.', iconName: 'HeartPulse' },
+        { id: '3', name: 'Neurology', description: 'Specialized treatment for brain and nerve disorders.', detailedDescription: 'Our Neurology team is equipped to handle complex neurological disorders. Services include diagnosis and management of stroke, epilepsy, Parkinson\'s disease, multiple sclerosis, and other conditions affecting the brain, spinal cord, and nerves.', iconName: 'Brain' },
+        { id: '4', name: 'Orthopedics', description: 'Advanced care for bones and joints.', detailedDescription: 'The Orthopedics department offers comprehensive care for bone, joint, ligament, tendon, and muscle injuries and conditions. We provide surgical and non-surgical treatments, including joint replacement and sports medicine.', iconName: 'Bone' },
+        { id: '5', name: 'Pediatrics', description: 'Dedicated healthcare for infants and children.', detailedDescription: 'Our Pediatrics department provides compassionate and comprehensive care for children from infancy through adolescence. Services include well-child visits, immunizations, and treatment for common and complex childhood illnesses.', iconName: 'Baby' },
+        { id: '6', name: 'Laboratory Services', description: 'Accurate diagnostic testing.', detailedDescription: 'Our state-of-the-art laboratory offers a full range of diagnostic tests, providing accurate and timely results to support patient care. We adhere to the highest standards of quality and precision.', iconName: 'Microscope' },
     ] as Service[],
     facilities: [
         { id: '1', name: 'Modern Patient Rooms', description: 'Comfortable and well-equipped private and semi-private rooms.', iconName: 'BedDouble' },
@@ -157,9 +158,9 @@ let mockDb = {
          { id: 'n3', title: 'Dr. Emily Carter Joins Grace Hospital', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=11', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
      ] as NewsEvent[],
     contact: {
-        address: '123 Grace Hospital Way, Healthville, ST 54321', // Updated Name
+        address: '123 Grace Hospital Way, Healthville, ST 54321', 
         phone: '(123) 456-7890',
-        email: 'info@gracehospital.example', // Updated email domain
+        email: 'info@gracehospital.example', 
         mapPlaceholder: 'Map Placeholder - Coordinates or Embed URL would go here',
     } as ContactInfo,
 };
