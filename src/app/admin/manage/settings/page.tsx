@@ -16,7 +16,10 @@ import Image from 'next/image'; // For logo preview
 // Define Zod schema for validation
 const siteSettingsSchema = z.object({
   hospitalName: z.string().min(3, "Hospital name must be at least 3 characters long"),
-  logoUrl: z.string().url("Logo URL must be a valid URL (e.g., https://...)").optional().or(z.literal('')),
+  logoUrl: z.string().optional().or(z.literal('')).refine(value => {
+    if (!value) return true; // Allow empty or undefined
+    return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
+  }, { message: "Must be a valid URL or an uploaded image." }),
 });
 
 type SiteSettingsFormData = z.infer<typeof siteSettingsSchema>;
@@ -25,9 +28,11 @@ export default function ManageSettingsPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentLogoUrl, setCurrentLogoUrl] = useState<string | undefined>(undefined);
+  const [logoPreview, setLogoPreview] = useState<string | undefined>(undefined);
+  const [logoFileName, setLogoFileName] = useState<string | undefined>(undefined);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<SiteSettingsFormData>({
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<SiteSettingsFormData>({
     resolver: zodResolver(siteSettingsSchema),
     defaultValues: {
         hospitalName: '',
@@ -35,15 +40,15 @@ export default function ManageSettingsPage() {
     },
   });
 
-  const logoUrlField = watch('logoUrl'); // Watch the logoUrl field for preview
+  const watchedLogoUrl = watch('logoUrl');
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const data = await getSiteSettings();
-        reset(data); // Populate form with fetched data
-        setCurrentLogoUrl(data.logoUrl); // Set initial logo URL for preview
+        reset(data);
+        setLogoPreview(data.logoUrl);
       } catch (error) {
         toast({
           title: "Error",
@@ -58,17 +63,37 @@ export default function ManageSettingsPage() {
   }, [reset, toast]);
 
   useEffect(() => {
-    // Update preview URL when form value changes
-    setCurrentLogoUrl(logoUrlField);
-  }, [logoUrlField]);
+    setLogoPreview(watchedLogoUrl);
+  }, [watchedLogoUrl]);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setLogoFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setValue('logoUrl', dataUri, { shouldValidate: true });
+        setLogoPreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setLogoFileName(undefined);
+      // Optionally clear 'logoUrl' if file is removed, or let user clear URL field
+    }
+  };
 
   const onSubmit: SubmitHandler<SiteSettingsFormData> = async (data) => {
     setIsSaving(true);
     try {
-      const updatedSettings = await updateSiteSettings(data);
-      reset(updatedSettings); // Reset form with saved data to reflect changes
-      setCurrentLogoUrl(updatedSettings.logoUrl); // Update preview
+      const dataToSave = {
+        ...data,
+        logoUrl: data.logoUrl || '', // Ensure empty string if undefined
+      };
+      const updatedSettings = await updateSiteSettings(dataToSave);
+      reset(updatedSettings); 
+      setLogoPreview(updatedSettings.logoUrl);
+      setLogoFileName(undefined); // Clear file name after successful save
       toast({
         title: "Success",
         description: "Site settings updated successfully.",
@@ -100,6 +125,10 @@ export default function ManageSettingsPage() {
                     <Skeleton className="h-4 w-1/4" />
                     <Skeleton className="h-10 w-full" />
                 </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-1/5" />
                     <Skeleton className="h-24 w-24" /> {/* Logo preview skeleton */}
@@ -127,34 +156,59 @@ export default function ManageSettingsPage() {
             {errors.hospitalName && <p className="text-sm text-destructive">{errors.hospitalName.message}</p>}
           </div>
 
-          {/* Logo URL */}
+          {/* Logo URL Input */}
           <div className="space-y-2">
-            <Label htmlFor="logoUrl">Logo Image URL (Optional)</Label>
-            <Input id="logoUrl" {...register("logoUrl")} placeholder="https://example.com/logo.png" disabled={isSaving} />
+            <Label htmlFor="logoUrlField">Logo Image URL (Optional)</Label>
+            <Input 
+              id="logoUrlField" 
+              {...register("logoUrl")} 
+              placeholder="https://example.com/logo.png or leave blank to upload" 
+              disabled={isSaving} 
+              onChange={(e) => {
+                setValue("logoUrl", e.target.value, {shouldValidate: true});
+                setLogoPreview(e.target.value);
+                setLogoFileName(undefined); // Clear file name if URL is typed
+              }}
+            />
             {errors.logoUrl && <p className="text-sm text-destructive">{errors.logoUrl.message}</p>}
-             <p className="text-xs text-muted-foreground">Provide a direct URL to the logo image.</p>
           </div>
 
+           {/* Logo File Upload Input */}
+           <div className="space-y-2">
+            <Label htmlFor="logoUpload">Or Upload Logo</Label>
+            <Input 
+              id="logoUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+              disabled={isSaving} 
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {logoFileName && <p className="text-sm text-muted-foreground">Selected file: {logoFileName}</p>}
+            <p className="text-xs text-muted-foreground">Upload a logo image. URLs will take precedence if both are provided.</p>
+          </div>
+
+
           {/* Logo Preview */}
-          {currentLogoUrl && (
+          {logoPreview && (
             <div className="space-y-2">
                 <Label>Logo Preview</Label>
                 <div className="relative h-24 w-24 rounded border overflow-hidden bg-muted p-1">
                     <Image
-                     src={currentLogoUrl}
+                     src={logoPreview}
                      alt="Logo preview"
                      layout="fill"
-                     objectFit="contain" // Use contain to see the whole logo
+                     objectFit="contain"
                      unoptimized 
                     />
                 </div>
             </div>
           )}
-           {!currentLogoUrl && !isLoading && (
+           {!logoPreview && !isLoading && (
              <div className="space-y-2">
                 <Label>Logo Preview</Label>
                  <div className="h-24 w-24 rounded border bg-muted flex items-center justify-center text-sm text-muted-foreground">
-                    No logo URL
+                    No logo
                  </div>
             </div>
            )}
