@@ -27,8 +27,11 @@ export type Facility = {
 export type Department = {
     id: string;
     name: string;
-    description: string;
+    description: string; // Short description for AccordionTrigger
     iconName: string;
+    detailedDescription: string; // Detailed content for AccordionContent
+    headOfDepartmentImage?: string; // Image of HOD for AccordionContent
+    headOfDepartmentImageHint?: string; // AI hint for HOD image
 };
 
 export type GalleryItem = {
@@ -138,12 +141,60 @@ let mockDb = {
         { id: 'f5', name: 'Emergency Department', description: '24/7 immediate medical attention.', iconName: 'Hospital', imageUrl: 'https://picsum.photos/600/400?random=facility5', imageHint: 'emergency room', detailedDescription: 'Grace Hospital\'s Emergency Department operates around the clock, providing immediate medical attention for urgent and life-threatening conditions. Our experienced emergency physicians, nurses, and support staff are prepared to handle a wide range of medical emergencies with speed and expertise.' },
     ] as Facility[],
     departments: [
-        { id: 'd1', name: 'Cardiology', description: 'Specializing in heart and vascular system disorders. We offer advanced diagnostics, treatments, and preventive care.', iconName: 'HeartPulse' },
-        { id: 'd2', name: 'Neurology', description: 'Focused on the diagnosis and treatment of nervous system disorders, including the brain, spinal cord, and nerves.', iconName: 'Brain' },
-        { id: 'd3', name: 'Orthopedics', description: 'Providing comprehensive care for musculoskeletal conditions, including bones, joints, ligaments, tendons, and muscles.', iconName: 'Bone' },
-        { id: 'd4', name: 'Pediatrics', description: 'Dedicated to the medical care of infants, children, and adolescents.', iconName: 'Baby' },
-        { id: 'd5', name: 'General Surgery', description: 'Offering a wide range of surgical procedures performed by experienced surgeons using modern techniques.', iconName: 'Scissors' },
-        { id: 'd6', name: 'Oncology', description: 'Comprehensive cancer care including diagnosis, treatment, and support services.', iconName: 'ShieldCheck' },
+        { 
+            id: 'd1', 
+            name: 'Cardiology', 
+            description: 'Specializing in heart and vascular system disorders.', 
+            iconName: 'HeartPulse',
+            detailedDescription: 'The Cardiology Department at Grace Hospital offers comprehensive care for a wide range of heart conditions. Our team of expert cardiologists utilizes cutting-edge diagnostic tools and treatment methods, including ECG, echocardiography, stress testing, and cardiac catheterization. We focus on preventive care, early detection, and personalized treatment plans for conditions such as coronary artery disease, heart failure, arrhythmias, and valvular heart disease. Our goal is to improve cardiovascular health and quality of life for our patients.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod1',
+            headOfDepartmentImageHint: 'cardiologist portrait'
+        },
+        { 
+            id: 'd2', 
+            name: 'Neurology', 
+            description: 'Focused on the diagnosis and treatment of nervous system disorders.', 
+            iconName: 'Brain',
+            detailedDescription: 'Our Neurology Department provides specialized care for disorders affecting the brain, spinal cord, and nerves. We manage conditions such as stroke, epilepsy, Parkinson\'s disease, multiple sclerosis, migraines, and neuromuscular disorders. Our neurologists are equipped with advanced diagnostic capabilities, including EEG and MRI, to ensure accurate diagnoses and effective, individualized treatment strategies.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod2',
+            headOfDepartmentImageHint: 'neurologist portrait'
+        },
+        { 
+            id: 'd3', 
+            name: 'Orthopedics', 
+            description: 'Providing comprehensive care for musculoskeletal conditions.', 
+            iconName: 'Bone',
+            detailedDescription: 'The Orthopedics Department at Grace Hospital is dedicated to treating injuries and diseases of the musculoskeletal system. This includes bones, joints, ligaments, tendons, muscles, and nerves. Our services range from non-surgical treatments and physical therapy to advanced surgical procedures like joint replacements, arthroscopy, and spinal surgery. We treat conditions such as fractures, arthritis, sports injuries, and back pain.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod3',
+            headOfDepartmentImageHint: 'orthopedic surgeon'
+        },
+        { 
+            id: 'd4', 
+            name: 'Pediatrics', 
+            description: 'Dedicated to the medical care of infants, children, and adolescents.', 
+            iconName: 'Baby',
+            detailedDescription: 'Our Pediatrics Department offers compassionate and comprehensive healthcare for children from birth through adolescence. We provide well-child check-ups, immunizations, developmental screenings, and treatment for acute and chronic illnesses. Our pediatricians are committed to creating a child-friendly environment and partnering with families to ensure the healthy growth and development of their children.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod4',
+            headOfDepartmentImageHint: 'pediatrician friendly'
+        },
+        { 
+            id: 'd5', 
+            name: 'General Surgery', 
+            description: 'Offering a wide range of surgical procedures.', 
+            iconName: 'Scissors',
+            detailedDescription: 'The General Surgery Department provides expert surgical care for a broad spectrum of conditions. Our skilled surgeons perform procedures related to the abdomen, digestive tract, endocrine system, breast, skin, and soft tissues. We utilize minimally invasive techniques whenever possible to promote faster recovery and reduce discomfort. Common procedures include appendectomies, hernia repairs, and gallbladder surgeries.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod5',
+            headOfDepartmentImageHint: 'surgeon confident'
+        },
+        { 
+            id: 'd6', 
+            name: 'Oncology', 
+            description: 'Comprehensive cancer care and support services.', 
+            iconName: 'ShieldCheck',
+            detailedDescription: 'The Oncology Department at Grace Hospital is committed to providing comprehensive and compassionate cancer care. We offer a multidisciplinary approach involving medical oncologists, radiation oncologists, surgical oncologists, and support staff. Our services include advanced diagnostics, chemotherapy, immunotherapy, targeted therapy, radiation therapy, and access to clinical trials. We also provide vital support services such as nutritional counseling and psychosocial support for patients and their families.',
+            headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod6',
+            headOfDepartmentImageHint: 'oncologist caring'
+        },
     ] as Department[],
     gallery: [
         { id: 'p1', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery1', alt: 'Hospital lobby', hint: 'hospital lobby' },
@@ -199,7 +250,7 @@ export const getHeroSlides = async (): Promise<HeroSlide[]> => {
 export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<HeroSlide> => {
     await delay(SIMULATED_DELAY);
     const newSlide = { ...data, id: generateId() };
-    mockDb.heroSlides.push(newSlide);
+    mockDb.heroSlides.unshift(newSlide); // Add to beginning
     return JSON.parse(JSON.stringify(newSlide));
 };
 
@@ -245,7 +296,7 @@ export const getServiceById = async (id: string): Promise<Service | undefined> =
 export const createService = async (data: Omit<Service, 'id'>): Promise<Service> => {
     await delay(SIMULATED_DELAY);
     const newService = { ...data, id: generateId() };
-    mockDb.services.push(newService);
+    mockDb.services.unshift(newService);
     return JSON.parse(JSON.stringify(newService));
 };
 
@@ -278,7 +329,7 @@ export const getFacilityById = async (id: string): Promise<Facility | undefined>
 export const createFacility = async (data: Omit<Facility, 'id'>): Promise<Facility> => {
     await delay(SIMULATED_DELAY);
     const newFacility = { ...data, id: generateId() };
-    mockDb.facilities.push(newFacility);
+    mockDb.facilities.unshift(newFacility);
     return JSON.parse(JSON.stringify(newFacility));
 };
 
@@ -311,7 +362,7 @@ export const getDepartmentById = async (id: string): Promise<Department | undefi
 export const createDepartment = async (data: Omit<Department, 'id'>): Promise<Department> => {
     await delay(SIMULATED_DELAY);
     const newDepartment = { ...data, id: generateId() };
-    mockDb.departments.push(newDepartment);
+    mockDb.departments.unshift(newDepartment);
     return JSON.parse(JSON.stringify(newDepartment));
 };
 
@@ -344,7 +395,7 @@ export const getGalleryItemById = async (id: string): Promise<GalleryItem | unde
 export const createGalleryItem = async (data: Omit<GalleryItem, 'id'>): Promise<GalleryItem> => {
     await delay(SIMULATED_DELAY);
     const newItem = { ...data, id: generateId() };
-    mockDb.gallery.push(newItem);
+    mockDb.gallery.unshift(newItem);
     return JSON.parse(JSON.stringify(newItem));
 };
 
@@ -366,7 +417,7 @@ export const deleteGalleryItem = async (id: string): Promise<boolean> => {
 // --- News & Events ---
 export const getNewsEvents = async (): Promise<NewsEvent[]> => {
     await delay(SIMULATED_DELAY);
-    return JSON.parse(JSON.stringify(mockDb.newsEvents));
+    return JSON.parse(JSON.stringify(mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())));
 };
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
@@ -377,7 +428,8 @@ export const getNewsEventById = async (id: string): Promise<NewsEvent | undefine
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<NewsEvent> => {
     await delay(SIMULATED_DELAY);
     const newEvent = { ...data, id: generateId() };
-    mockDb.newsEvents.push(newEvent);
+    mockDb.newsEvents.push(newEvent); // Add to array
+    // Sort after adding, new items are typically pushed to end then sorted
     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return JSON.parse(JSON.stringify(newEvent));
 };
