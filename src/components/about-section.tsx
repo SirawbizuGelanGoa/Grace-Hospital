@@ -13,9 +13,33 @@ const AboutSection = async () => {
            <CardHeader className="bg-primary text-primary-foreground">
              <CardTitle className="text-3xl font-bold text-center">{aboutContent.title || 'About Us'}</CardTitle>
            </CardHeader>
-           <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <p className="text-lg mb-6 text-foreground">{aboutContent.description}</p>
+           <CardContent className="p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Content for the first column on desktop, and main flow for mobile */}
+            <div className="flex flex-col gap-6">
+              {/* Description */}
+              <p className="text-lg text-foreground">
+                {aboutContent.description}
+              </p>
+
+              {/* Image for Mobile - displayed only on mobile screens, after description */}
+              <div className="md:hidden relative h-64 rounded-lg overflow-hidden shadow-md">
+                {aboutContent.imageUrl ? (
+                  <Image
+                    src={aboutContent.imageUrl}
+                    alt={`About ${aboutContent.title || 'Grace Hospital'} Image`}
+                    layout="fill"
+                    objectFit="cover"
+                    quality={75}
+                    data-ai-hint={aboutContent.imageHint || 'hospital staff'}
+                  />
+                ) : (
+                  <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
+                    Image Placeholder
+                  </div>
+                )}
+              </div>
+
+              {/* Mission & Vision */}
               <div className="space-y-4">
                 <div>
                   <h3 className="text-xl font-semibold text-primary mb-2">Our Mission</h3>
@@ -27,21 +51,22 @@ const AboutSection = async () => {
                 </div>
               </div>
             </div>
-            <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-md">
-              {aboutContent.imageUrl && (
-                 <Image
+
+            {/* Image for Desktop - displayed only on md screens and up, in the second column */}
+            <div className="hidden md:block relative h-96 rounded-lg overflow-hidden shadow-md">
+              {aboutContent.imageUrl ? (
+                <Image
                   src={aboutContent.imageUrl}
                   alt={`About ${aboutContent.title || 'Grace Hospital'} Image`}
                   layout="fill"
                   objectFit="cover"
                   quality={75}
-                  data-ai-hint={aboutContent.imageHint || 'hospital staff'} // Use hint from data or default
-                 />
-              )}
-              {!aboutContent.imageUrl && (
-                 <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
-                   Image Placeholder
-                 </div>
+                  data-ai-hint={aboutContent.imageHint || 'hospital staff'}
+                />
+              ) : (
+                <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
+                  Image Placeholder
+                </div>
               )}
             </div>
           </CardContent>
