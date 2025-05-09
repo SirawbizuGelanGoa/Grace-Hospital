@@ -22,7 +22,10 @@ import NextImage from 'next/image'; // Renamed to avoid conflict with Lucide's I
 
 // Define Zod schema for validation
 const heroSlideSchema = z.object({
-  src: z.string().url("Source must be a valid URL (e.g., https://...)"),
+  src: z.string().min(1, "Image source is required.").refine(value => 
+    value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image'), 
+    { message: "Must be a valid URL or an uploaded image." }
+  ),
   alt: z.string().min(5, "Alternative text must be at least 5 characters long"),
   hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
   title: z.string().max(100, "Title cannot exceed 100 characters").optional(),
@@ -44,8 +47,10 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!slide;
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+  const [fileName, setFileName] = useState<string | undefined>(undefined);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<HeroSlideFormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<HeroSlideFormData>({
     resolver: zodResolver(heroSlideSchema),
     defaultValues: {
       src: '',
@@ -58,7 +63,7 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
     }
   });
 
-  const srcUrl = watch('src');
+  const watchedSrc = watch('src');
 
   useEffect(() => {
     if (isOpen) {
@@ -72,6 +77,7 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
           ctaLink: slide.ctaLink || '',
           ctaText: slide.ctaText || '',
         });
+        setImagePreview(slide.src);
       } else {
         reset({
           src: '',
@@ -82,17 +88,37 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
           ctaLink: '',
           ctaText: '',
         });
+        setImagePreview(undefined);
       }
+      setFileName(undefined); // Clear file name on open/reset
     }
   }, [isOpen, slide, reset]);
+
+  useEffect(() => {
+    setImagePreview(watchedSrc);
+  }, [watchedSrc]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setValue('src', dataUri, { shouldValidate: true });
+        setImagePreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFileName(undefined);
+    }
+  };
 
   const onSubmit: SubmitHandler<HeroSlideFormData> = async (data) => {
     setIsSaving(true);
     try {
       let savedSlide: HeroSlide | null;
-      const dataToSave = {
-        ...data,
-      };
+      const dataToSave = { ...data };
 
       if (isEditing && slide) {
         savedSlide = await updateHeroSlide(slide.id, dataToSave);
@@ -103,6 +129,7 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
         toast({ title: "Success", description: "Hero slide created successfully." });
       }
       onSuccess(savedSlide);
+      setFileName(undefined);
     } catch (error) {
       toast({
         title: "Error",
@@ -117,19 +144,11 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       reset();
+      setImagePreview(undefined);
+      setFileName(undefined);
     }
     setIsOpen(open);
   };
-
-   const isValidUrl = (url: string | undefined): boolean => {
-     if (!url) return false;
-     try {
-       new URL(url);
-       return true;
-     } catch (_) {
-       return false;
-     }
-   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -141,20 +160,44 @@ export default function HeroSlideFormDialog({ isOpen, setIsOpen, slide, onSucces
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-          {/* Source URL */}
+          {/* Source URL Input */}
           <div className="space-y-1">
             <Label htmlFor="src">Image URL</Label>
-            <Input id="src" {...register("src")} placeholder="https://picsum.photos/1200/800" disabled={isSaving} />
+            <Input 
+              id="src" 
+              {...register("src")} 
+              placeholder="https://picsum.photos/1200/800 or leave blank to upload" 
+              disabled={isSaving}
+              onChange={(e) => {
+                setValue("src", e.target.value, { shouldValidate: true });
+                setImagePreview(e.target.value);
+                setFileName(undefined); // Clear file name if URL is typed
+              }}
+            />
             {errors.src && <p className="text-sm text-destructive">{errors.src.message}</p>}
           </div>
 
+          {/* File Upload Input */}
+          <div className="space-y-1">
+            <Label htmlFor="imageUpload">Or Upload Image</Label>
+            <Input 
+              id="imageUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+              disabled={isSaving}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+          </div>
+
           {/* Image Preview */}
-          {isValidUrl(srcUrl) && (
+          {imagePreview && (
             <div className="space-y-1">
               <Label>Preview</Label>
                <div className="relative h-40 w-full rounded border overflow-hidden bg-muted">
                  <NextImage
-                   src={srcUrl!}
+                   src={imagePreview}
                    alt="Preview"
                    layout="fill"
                    objectFit="cover"

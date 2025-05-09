@@ -20,7 +20,10 @@ const aboutSchema = z.object({
   description: z.string().min(20, "Description must be at least 20 characters long"),
   mission: z.string().min(10, "Mission statement must be at least 10 characters long"),
   vision: z.string().min(10, "Vision statement must be at least 10 characters long"),
-  imageUrl: z.string().url("Image URL must be a valid URL").optional().or(z.literal('')), // Optional and allows empty string
+  imageUrl: z.string().optional().or(z.literal('')).refine(value => {
+    if (!value) return true; // Allow empty or undefined
+    return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
+  }, { message: "Must be a valid URL or an uploaded image." }),
   imageHint: z.string().optional(),
 });
 
@@ -30,11 +33,13 @@ export default function ManageAboutPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+  const [fileName, setFileName] = useState<string | undefined>(undefined);
+
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AboutFormData>({
     resolver: zodResolver(aboutSchema),
-    defaultValues: { // Ensure default values match the schema
+    defaultValues: {
         title: '',
         description: '',
         mission: '',
@@ -44,15 +49,15 @@ export default function ManageAboutPage() {
     },
   });
 
-  const imageUrl = watch('imageUrl'); // Watch the imageUrl field for preview
+  const watchedImageUrl = watch('imageUrl');
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const data = await getAboutContent();
-        reset(data); // Populate form with fetched data
-        setCurrentImageUrl(data.imageUrl); // Set initial image URL for preview
+        reset(data);
+        setImagePreview(data.imageUrl);
       } catch (error) {
         toast({
           title: "Error",
@@ -67,17 +72,39 @@ export default function ManageAboutPage() {
   }, [reset, toast]);
 
    useEffect(() => {
-     // Update preview URL when form value changes
-     setCurrentImageUrl(imageUrl);
-   }, [imageUrl]);
+     setImagePreview(watchedImageUrl);
+   }, [watchedImageUrl]);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setValue('imageUrl', dataUri, { shouldValidate: true });
+        setImagePreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFileName(undefined);
+      // If file is removed, clear the imageUrl if it was a data URI, or leave it if it's an external URL
+      // For simplicity, we might let the user clear the URL field manually or re-upload
+    }
+  };
 
   const onSubmit: SubmitHandler<AboutFormData> = async (data) => {
     setIsSaving(true);
     try {
-      const updatedContent = await updateAboutContent(data);
-       reset(updatedContent); // Reset form with saved data to reflect changes
-       setCurrentImageUrl(updatedContent.imageUrl); // Update preview
+      // Ensure imageUrl is either a valid URL or data URI, or empty
+      const dataToSave = {
+        ...data,
+        imageUrl: data.imageUrl || '', // Ensure empty string if undefined
+      };
+      const updatedContent = await updateAboutContent(dataToSave);
+       reset(updatedContent); 
+       setImagePreview(updatedContent.imageUrl);
+       setFileName(undefined); // Clear file name after successful save
       toast({
         title: "Success",
         description: "About content updated successfully.",
@@ -132,24 +159,49 @@ export default function ManageAboutPage() {
             {errors.vision && <p className="text-sm text-destructive">{errors.vision.message}</p>}
           </div>
 
-           {/* Image URL */}
+           {/* Image URL Input */}
           <div className="space-y-2">
             <Label htmlFor="imageUrl">Image URL (Optional)</Label>
-            <Input id="imageUrl" {...register("imageUrl")} placeholder="https://example.com/image.jpg" disabled={isSaving} />
+            <Input 
+              id="imageUrl" 
+              {...register("imageUrl")} 
+              placeholder="https://example.com/image.jpg or leave blank to upload" 
+              disabled={isSaving} 
+              onChange={(e) => {
+                setValue("imageUrl", e.target.value, {shouldValidate: true});
+                setImagePreview(e.target.value);
+                setFileName(undefined); // Clear file name if URL is typed
+              }}
+            />
             {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
           </div>
+          
+          {/* File Upload Input */}
+          <div className="space-y-2">
+            <Label htmlFor="imageUpload">Or Upload Image</Label>
+            <Input 
+              id="imageUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+              disabled={isSaving} 
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+          </div>
+
 
            {/* Image Preview */}
-          {currentImageUrl && (
+          {imagePreview && (
             <div className="space-y-2">
                 <Label>Image Preview</Label>
                 <div className="relative h-40 w-full max-w-md rounded border overflow-hidden">
                     <Image
-                     src={currentImageUrl}
+                     src={imagePreview}
                      alt="About section image preview"
                      layout="fill"
                      objectFit="cover"
-                     unoptimized // Good for external URLs that might change
+                     unoptimized // Good for external URLs and data URIs that might change
                     />
                 </div>
             </div>
@@ -202,6 +254,10 @@ const AboutPageSkeleton = () => (
           <div className="space-y-2">
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-10 w-full" />
+         </div>
+         <div className="space-y-2">
+             <Skeleton className="h-4 w-28" />
+             <Skeleton className="h-10 w-full" />
          </div>
          <div className="space-y-2">
             <Skeleton className="h-4 w-24" />

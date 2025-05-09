@@ -23,9 +23,12 @@ import Image from 'next/image';
 // Define Zod schema for validation
 const gallerySchema = z.object({
   type: z.enum(['photo', 'video']),
-  src: z.string().url("Source must be a valid URL (e.g., https://...)"),
+  src: z.string().min(1, "Source is required.").refine(value => 
+    value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image') || value.startsWith('data:video'), 
+    { message: "Must be a valid URL or an uploaded file." }
+  ),
   alt: z.string().min(5, "Alternative text must be at least 5 characters long"),
-  hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(), // Optional AI hint
+  hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
 });
 
 type GalleryFormData = z.infer<typeof gallerySchema>;
@@ -33,16 +36,18 @@ type GalleryFormData = z.infer<typeof gallerySchema>;
 interface GalleryFormDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  item: GalleryItem | null; // Item data for editing, null for adding
-  onSuccess: (item: GalleryItem) => void; // Callback on successful save
+  item: GalleryItem | null;
+  onSuccess: (item: GalleryItem) => void;
 }
 
 export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }: GalleryFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!item;
+  const [filePreview, setFilePreview] = useState<string | undefined>(undefined);
+  const [fileName, setFileName] = useState<string | undefined>(undefined);
 
-  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<GalleryFormData>({
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<GalleryFormData>({
     resolver: zodResolver(gallerySchema),
     defaultValues: {
       type: 'photo',
@@ -52,7 +57,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
     }
   });
 
-  const srcUrl = watch('src'); // Watch the src field for preview
+  const watchedSrc = watch('src');
   const itemType = watch('type');
 
   useEffect(() => {
@@ -64,16 +69,39 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
           alt: item.alt,
           hint: item.hint || '',
         });
+        setFilePreview(item.src);
       } else {
-        reset({ // Reset to default values for adding new
+        reset({
           type: 'photo',
           src: '',
           alt: '',
           hint: '',
         });
+        setFilePreview(undefined);
       }
+      setFileName(undefined);
     }
   }, [isOpen, item, reset]);
+
+  useEffect(() => {
+    setFilePreview(watchedSrc);
+  }, [watchedSrc]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setValue('src', dataUri, { shouldValidate: true });
+        setFilePreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFileName(undefined);
+    }
+  };
 
   const onSubmit: SubmitHandler<GalleryFormData> = async (data) => {
     setIsSaving(true);
@@ -88,6 +116,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
         toast({ title: "Success", description: "Gallery item created successfully." });
       }
       onSuccess(savedItem);
+      setFileName(undefined);
     } catch (error) {
       toast({
         title: "Error",
@@ -102,20 +131,11 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       reset();
+      setFilePreview(undefined);
+      setFileName(undefined);
     }
     setIsOpen(open);
   };
-
-   // Basic URL validation for preview
-   const isValidUrl = (url: string | undefined): boolean => {
-     if (!url) return false;
-     try {
-       new URL(url);
-       return true;
-     } catch (_) {
-       return false;
-     }
-   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -127,7 +147,6 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          {/* Item Type */}
           <Controller
              name="type"
              control={control}
@@ -154,53 +173,72 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
            />
            {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
 
-
-          {/* Source URL */}
           <div className="space-y-1">
             <Label htmlFor="src">Source URL</Label>
-            <Input id="src" {...register("src")} placeholder="https://picsum.photos/400/300" disabled={isSaving} />
+            <Input 
+              id="src" 
+              {...register("src")} 
+              placeholder="https://picsum.photos/400/300 or leave blank to upload" 
+              disabled={isSaving}
+              onChange={(e) => {
+                setValue("src", e.target.value, { shouldValidate: true });
+                setFilePreview(e.target.value);
+                setFileName(undefined);
+              }}
+            />
             {errors.src && <p className="text-sm text-destructive">{errors.src.message}</p>}
           </div>
 
-           {/* Preview (only for valid image URLs or video placeholders) */}
-          {(itemType === 'photo' && isValidUrl(srcUrl)) && (
+          <div className="space-y-1">
+            <Label htmlFor="fileUpload">Or Upload File (Image/Video)</Label>
+            <Input 
+              id="fileUpload" 
+              type="file" 
+              accept="image/*,video/*" 
+              onChange={handleFileChange} 
+              disabled={isSaving}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+          </div>
+
+          {filePreview && itemType === 'photo' && (
             <div className="space-y-1">
               <Label>Preview</Label>
                <div className="relative h-32 w-full rounded border overflow-hidden bg-muted">
                  <Image
-                   src={srcUrl!} // Assert non-null because isValidUrl passed
+                   src={filePreview}
                    alt="Preview"
                    layout="fill"
-                   objectFit="contain" // Use contain to see the whole image
+                   objectFit="contain"
                    unoptimized
                  />
                </div>
             </div>
            )}
-           {itemType === 'video' && (
+           {filePreview && itemType === 'video' && (
               <div className="space-y-1">
                 <Label>Preview (Video)</Label>
                 <div className="relative h-32 w-full rounded border overflow-hidden bg-muted flex items-center justify-center text-muted-foreground text-sm">
-                  Video Preview Placeholder <br/> (URL: {isValidUrl(srcUrl) ? "Valid" : "Invalid"})
+                  {filePreview.startsWith('data:video') ? 
+                    <video controls src={filePreview} className="max-h-full max-w-full" /> : 
+                    'Video Preview (URL or upload)'}
                 </div>
               </div>
            )}
 
-          {/* Alt Text */}
           <div className="space-y-1">
             <Label htmlFor="alt">Alternative Text (Required)</Label>
             <Input id="alt" {...register("alt")} placeholder="Describe the image/video" disabled={isSaving} />
             {errors.alt && <p className="text-sm text-destructive">{errors.alt.message}</p>}
           </div>
 
-           {/* AI Hint */}
            <div className="space-y-1">
             <Label htmlFor="hint">AI Hint (Optional)</Label>
             <Input id="hint" {...register("hint")} placeholder="e.g., hospital lobby" disabled={isSaving} />
              <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
             {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
           </div>
-
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>

@@ -27,41 +27,43 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { createNewsEvent, updateNewsEvent, NewsEvent } from '@/lib/mock-data';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Using NextImage to avoid conflict if 'Image' is a Lucide icon
 
 // Define Zod schema for validation
 const newsSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long"),
-  date: z.date({ required_error: "Date is required." }), // Use z.date for Calendar component
+  date: z.date({ required_error: "Date is required." }),
   summary: z.string().min(10, "Summary must be at least 10 characters long").max(200, "Summary cannot exceed 200 characters"),
-  image: z.string().url("Image source must be a valid URL"),
-  link: z.string().min(1, "Link slug is required (e.g., /news/my-article)").refine(val => val.startsWith('/'), { message: "Link must start with /"}), // Simple validation, adjust as needed
+  image: z.string().min(1, "Image source is required.").refine(value => 
+    value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image'), 
+    { message: "Must be a valid URL or an uploaded image." }
+  ),
+  link: z.string().min(1, "Link slug is required (e.g., /news/my-article)").refine(val => val.startsWith('/'), { message: "Link must start with /"}),
   hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
 });
 
-// Type for form data based on schema
 type NewsFormData = z.infer<typeof newsSchema>;
-
-// Type for data expected/returned by mock-data functions (uses ISO string for date)
 type NewsData = Omit<NewsEvent, 'id' | 'date'> & { date: string };
 
 interface NewsFormDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  item: NewsEvent | null; // Item data for editing, null for adding
-  onSuccess: (item: NewsEvent) => void; // Callback on successful save
+  item: NewsEvent | null;
+  onSuccess: (item: NewsEvent) => void;
 }
 
 export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: NewsFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!item;
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+  const [fileName, setFileName] = useState<string | undefined>(undefined);
 
-  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<NewsFormData>({
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<NewsFormData>({
     resolver: zodResolver(newsSchema),
     defaultValues: {
       title: '',
-      date: new Date(), // Default to today
+      date: new Date(),
       summary: '',
       image: '',
       link: '/news/',
@@ -69,21 +71,22 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
     }
   });
 
-  const imageUrl = watch('image'); // Watch the image field for preview
+  const watchedImage = watch('image');
 
   useEffect(() => {
     if (isOpen) {
       if (item) {
         reset({
           title: item.title,
-          date: parseISO(item.date), // Convert ISO string back to Date object
+          date: parseISO(item.date),
           summary: item.summary,
           image: item.image,
           link: item.link,
           hint: item.hint || '',
         });
+        setImagePreview(item.image);
       } else {
-        reset({ // Reset to default values for adding new
+        reset({
           title: '',
           date: new Date(),
           summary: '',
@@ -91,13 +94,34 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
           link: '/news/',
           hint: '',
         });
+        setImagePreview(undefined);
       }
+      setFileName(undefined);
     }
   }, [isOpen, item, reset]);
 
+  useEffect(() => {
+    setImagePreview(watchedImage);
+  }, [watchedImage]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setValue('image', dataUri, { shouldValidate: true });
+        setImagePreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFileName(undefined);
+    }
+  };
+
   const onSubmit: SubmitHandler<NewsFormData> = async (data) => {
     setIsSaving(true);
-    // Convert Date object back to ISO string for mock data functions
      const dataToSave: NewsData = {
        ...data,
        date: data.date.toISOString(),
@@ -114,8 +138,9 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
         toast({ title: "Success", description: "News item created successfully." });
       }
       onSuccess(savedItem);
+      setFileName(undefined);
     } catch (error) {
-       console.error("Save error:", error); // Log the error
+       console.error("Save error:", error);
       toast({
         title: "Error",
         description: `Failed to ${isEditing ? 'update' : 'create'} news item. Please try again.`,
@@ -129,39 +154,28 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       reset();
+      setImagePreview(undefined);
+      setFileName(undefined);
     }
     setIsOpen(open);
   };
 
-    // Basic URL validation for preview
-   const isValidUrl = (url: string | undefined): boolean => {
-     if (!url) return false;
-     try {
-       new URL(url);
-       return true;
-     } catch (_) {
-       return false;
-     }
-   };
-
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]"> {/* Wider dialog for more fields */}
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit News Item' : 'Add New News Item'}</DialogTitle>
           <DialogDescription>
             {isEditing ? 'Update the details of the news article or event.' : 'Enter the details for the new news item.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          {/* Title */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="space-y-1">
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register("title")} disabled={isSaving} />
             {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
-           {/* Date Picker */}
            <div className="space-y-1">
              <Label htmlFor="date">Date</Label>
              <Controller
@@ -196,28 +210,47 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
              {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
            </div>
 
-
-          {/* Summary */}
           <div className="space-y-1">
             <Label htmlFor="summary">Summary</Label>
             <Textarea id="summary" {...register("summary")} rows={3} disabled={isSaving} />
             {errors.summary && <p className="text-sm text-destructive">{errors.summary.message}</p>}
           </div>
 
-           {/* Image URL */}
           <div className="space-y-1">
             <Label htmlFor="image">Image URL</Label>
-            <Input id="image" {...register("image")} placeholder="https://picsum.photos/400/250" disabled={isSaving} />
+            <Input 
+              id="image" 
+              {...register("image")} 
+              placeholder="https://picsum.photos/400/250 or leave blank to upload" 
+              disabled={isSaving}
+              onChange={(e) => {
+                setValue("image", e.target.value, { shouldValidate: true });
+                setImagePreview(e.target.value);
+                setFileName(undefined);
+              }}
+            />
             {errors.image && <p className="text-sm text-destructive">{errors.image.message}</p>}
           </div>
 
-          {/* Image Preview */}
-          {isValidUrl(imageUrl) && (
+          <div className="space-y-1">
+            <Label htmlFor="imageUpload">Or Upload Image</Label>
+            <Input 
+              id="imageUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+              disabled={isSaving}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+          </div>
+
+          {imagePreview && (
             <div className="space-y-1">
               <Label>Image Preview</Label>
                <div className="relative h-32 w-full max-w-xs rounded border overflow-hidden bg-muted">
-                 <Image
-                   src={imageUrl!}
+                 <NextImage
+                   src={imagePreview}
                    alt="News image preview"
                    layout="fill"
                    objectFit="cover"
@@ -227,7 +260,6 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
             </div>
            )}
 
-          {/* Link Slug */}
           <div className="space-y-1">
             <Label htmlFor="link">Link Slug</Label>
             <Input id="link" {...register("link")} placeholder="/news/your-article-slug" disabled={isSaving} />
@@ -235,7 +267,6 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
             {errors.link && <p className="text-sm text-destructive">{errors.link.message}</p>}
           </div>
 
-           {/* AI Hint */}
            <div className="space-y-1">
             <Label htmlFor="hint">AI Hint (Optional)</Label>
             <Input id="hint" {...register("hint")} placeholder="e.g., health camp" disabled={isSaving} />
@@ -243,8 +274,7 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
             {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
           </div>
 
-
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
               Cancel
             </Button>
