@@ -29,10 +29,18 @@ import { useToast } from "@/hooks/use-toast";
 import { createFacility, updateFacility, Facility } from '@/lib/mock-data';
 import DynamicIcon from '@/lib/icons';
 
-// Reuse icon list logic (could be moved to a shared util)
-const availableIconNames = Object.keys(LucideIcons).filter(key =>
-    key !== 'createLucideIcon' && key !== 'LucideIcon' && typeof LucideIcons[key as keyof typeof LucideIcons] !== 'string' && !key.includes('Provider')
-).sort();
+// Generate list of valid Lucide icon names
+const availableIconNames = Object.keys(LucideIcons)
+  .filter(key => {
+    const value = LucideIcons[key as keyof typeof LucideIcons];
+    // Check if it's a function (React components are functions)
+    // and if its name starts with an uppercase letter (convention for components)
+    // and it's not one of the known non-icon utility exports.
+    return typeof value === 'function' &&
+           key[0] === key[0].toUpperCase() && // Ensures PascalCase like 'Activity'
+           key !== 'LucideIcon'; // Exclude the base LucideIcon type/component factory helper
+  })
+  .sort();
 
 // Define Zod schema for validation
 const facilitySchema = z.object({
