@@ -39,8 +39,8 @@ const NewsEventsSection = async () => {
                 </CardContent>
                 <CardFooter>
                     <Button variant="link" asChild className="p-0 h-auto text-accent">
-                    {/* Update link handling - could be internal or external */}
-                    <Link href={item.link || '#'}>Read More</Link>
+                    {/* Updated Link: Point to /news/[id] */}
+                    <Link href={`/news/${item.id}`}>Read More</Link>
                     </Button>
                 </CardFooter>
                 </Card>

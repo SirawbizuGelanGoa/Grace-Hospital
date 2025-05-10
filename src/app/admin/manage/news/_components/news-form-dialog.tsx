@@ -34,6 +34,7 @@ const newsSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long"),
   date: z.date({ required_error: "Date is required." }),
   summary: z.string().min(10, "Summary must be at least 10 characters long").max(200, "Summary cannot exceed 200 characters"),
+  fullContent: z.string().min(50, "Full content must be at least 50 characters long"),
   image: z.string().min(1, "Image source is required.").refine(value => 
     value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image'), 
     { message: "Must be a valid URL or an uploaded image." }
@@ -43,7 +44,9 @@ const newsSchema = z.object({
 });
 
 type NewsFormData = z.infer<typeof newsSchema>;
-type NewsData = Omit<NewsEvent, 'id' | 'date'> & { date: string };
+// Type for data sent to mock DB (date as string)
+type NewsDataForDb = Omit<NewsEvent, 'id' | 'date'> & { date: string };
+
 
 interface NewsFormDialogProps {
   isOpen: boolean;
@@ -65,6 +68,7 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
       title: '',
       date: new Date(),
       summary: '',
+      fullContent: '',
       image: '',
       link: '/news/',
       hint: '',
@@ -78,8 +82,9 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
       if (item) {
         reset({
           title: item.title,
-          date: parseISO(item.date),
+          date: parseISO(item.date), // Parse ISO string back to Date object
           summary: item.summary,
+          fullContent: item.fullContent,
           image: item.image,
           link: item.link,
           hint: item.hint || '',
@@ -90,6 +95,7 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
           title: '',
           date: new Date(),
           summary: '',
+          fullContent: '',
           image: '',
           link: '/news/',
           hint: '',
@@ -122,9 +128,9 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
 
   const onSubmit: SubmitHandler<NewsFormData> = async (data) => {
     setIsSaving(true);
-     const dataToSave: NewsData = {
+     const dataToSave: NewsDataForDb = {
        ...data,
-       date: data.date.toISOString(),
+       date: data.date.toISOString(), // Convert Date object to ISO string for storage
      };
 
     try {
@@ -211,9 +217,15 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
            </div>
 
           <div className="space-y-1">
-            <Label htmlFor="summary">Summary</Label>
+            <Label htmlFor="summary">Summary (Short)</Label>
             <Textarea id="summary" {...register("summary")} rows={3} disabled={isSaving} />
             {errors.summary && <p className="text-sm text-destructive">{errors.summary.message}</p>}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="fullContent">Full Content</Label>
+            <Textarea id="fullContent" {...register("fullContent")} rows={8} disabled={isSaving} placeholder="Enter the full content of the news or event..."/>
+            {errors.fullContent && <p className="text-sm text-destructive">{errors.fullContent.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -261,9 +273,9 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
            )}
 
           <div className="space-y-1">
-            <Label htmlFor="link">Link Slug</Label>
-            <Input id="link" {...register("link")} placeholder="/news/your-article-slug" disabled={isSaving} />
-             <p className="text-xs text-muted-foreground">The part of the URL after your domain (must start with '/').</p>
+            <Label htmlFor="link">Link Slug (Unique)</Label>
+            <Input id="link" {...register("link")} placeholder="/news/your-unique-article-slug" disabled={isSaving} />
+             <p className="text-xs text-muted-foreground">Unique part of the URL after domain (must start with '/'). E.g., /news/health-camp-2024</p>
             {errors.link && <p className="text-sm text-destructive">{errors.link.message}</p>}
           </div>
 

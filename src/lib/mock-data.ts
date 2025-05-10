@@ -47,9 +47,10 @@ export type NewsEvent = {
     title: string;
     date: string; // ISO string date
     summary: string;
+    fullContent: string; // Detailed content for the news/event page
     image: string;
-    link: string; // Usually a slug or separate page path
-    hint?: string; // Optional AI hint
+    link: string; // Usually a slug or separate page path, should be unique
+    hint?: string; // Optional AI hint for the image
 };
 
 export type AboutContent = {
@@ -207,9 +208,36 @@ let mockDb = {
         { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' },
     ] as GalleryItem[],
     newsEvents: [
-         { id: 'n1', title: 'Grace Hospital Opens New Cardiology Wing', date: '2024-07-15T00:00:00.000Z', summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', image: 'https://picsum.photos/400/250?random=news1', link: '/news/new-cardiology-wing', hint: 'hospital wing' },
-         { id: 'n2', title: 'Free Health Check-up Camp', date: '2024-07-20T00:00:00.000Z', summary: 'Join us for a free health screening event next Saturday. Limited slots available.', image: 'https://picsum.photos/400/250?random=news2', link: '/news/health-checkup-camp', hint: 'health camp' },
-         { id: 'n3', title: 'Dr. Emily Carter Joins Grace Hospital', date: '2024-07-10T00:00:00.000Z', summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', image: 'https://picsum.photos/400/250?random=news3', link: '/news/dr-carter-joins', hint: 'doctor portrait' },
+         { 
+            id: 'n1', 
+            title: 'Grace Hospital Opens New Cardiology Wing', 
+            date: '2024-07-15T00:00:00.000Z', 
+            summary: 'Our expanded cardiology department offers cutting-edge treatments and diagnostics.', 
+            fullContent: 'Grace Hospital is thrilled to announce the grand opening of its new, state-of-the-art Cardiology Wing. This significant expansion enhances our ability to provide comprehensive cardiovascular care to the community.\n\nThe new wing features advanced diagnostic equipment, including the latest generation MRI and CT scanners specifically optimized for cardiac imaging, two new catheterization labs, and an expanded cardiac rehabilitation center. Patient rooms in the new wing are designed for comfort and equipped with advanced monitoring systems.\n\n"This investment underscores our commitment to heart health," said Dr. Alan Grant, Chief of Cardiology. "We can now offer more advanced procedures and accommodate a greater number of patients, reducing wait times and improving outcomes."\n\nThe expansion also includes dedicated spaces for research and physician training, positioning Grace Hospital at the forefront of cardiovascular innovation.',
+            image: 'https://picsum.photos/400/250?random=news1', 
+            link: '/news/new-cardiology-wing', 
+            hint: 'hospital wing' 
+        },
+         { 
+            id: 'n2', 
+            title: 'Free Health Check-up Camp', 
+            date: '2024-07-20T00:00:00.000Z', 
+            summary: 'Join us for a free health screening event next Saturday. Limited slots available.', 
+            fullContent: 'Grace Hospital is pleased to offer a Free Health Check-up Camp on Saturday, July 20th, from 9 AM to 3 PM. This community initiative aims to promote preventive healthcare and early detection of common health issues.\n\nServices offered will include:\n- Blood pressure monitoring\n- Blood sugar testing\n- Cholesterol screening\n- BMI assessment\n- Consultations with general physicians\n\n"We believe that access to basic health screenings is crucial for a healthy community," stated Ms. Jane Doe, Hospital Administrator. "This camp is part of our ongoing efforts to make healthcare more accessible."\n\nNo prior appointment is necessary, but services will be provided on a first-come, first-served basis. Please bring a valid ID. We encourage all community members to take advantage of this opportunity.',
+            image: 'https://picsum.photos/400/250?random=news2', 
+            link: '/news/health-checkup-camp', 
+            hint: 'health camp' 
+        },
+         { 
+            id: 'n3', 
+            title: 'Dr. Emily Carter Joins Grace Hospital', 
+            date: '2024-07-10T00:00:00.000Z', 
+            summary: 'We are pleased to welcome renowned neurologist Dr. Carter to our expert team.', 
+            fullContent: 'Grace Hospital proudly announces the addition of Dr. Emily Carter, a distinguished neurologist, to our medical staff. Dr. Carter brings over 15 years of experience in diagnosing and treating a wide range of neurological conditions, with a special interest in movement disorders and neurodegenerative diseases.\n\nDr. Carter completed her residency at Johns Hopkins Hospital and a fellowship in Movement Disorders at the Mayo Clinic. She is board-certified in Neurology and has published extensively in leading medical journals.\n\n"I am excited to join the exceptional team at Grace Hospital and contribute to its mission of providing outstanding patient care," Dr. Carter said. "I look forward to serving the community and advancing neurological care in the region."\n\nDr. Carter is now accepting new patients. To schedule an appointment, please call our Neurology Department.',
+            image: 'https://picsum.photos/400/250?random=news3', 
+            link: '/news/dr-carter-joins', 
+            hint: 'doctor portrait' 
+        },
      ] as NewsEvent[],
     contact: {
         address: '123 Grace Hospital Way, Healthville, ST 54321', 
@@ -422,14 +450,22 @@ export const getNewsEvents = async (): Promise<NewsEvent[]> => {
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
     await delay(SIMULATED_DELAY);
+    // The link field is used as a unique slug, so we search by that.
+    // If `id` is truly the unique identifier, then search by `n.id === id`.
+    // For now, assuming `id` parameter corresponds to the `id` field.
     return JSON.parse(JSON.stringify(mockDb.newsEvents.find(n => n.id === id)));
 };
 
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<NewsEvent> => {
     await delay(SIMULATED_DELAY);
+    // Ensure the link is unique if it's used as a slug for routing
+    const existingLinks = mockDb.newsEvents.map(e => e.link);
+    if (existingLinks.includes(data.link)) {
+        // Basic way to make link unique, in real app, better slug generation is needed
+        data.link = `${data.link}-${Date.now().toString().slice(-4)}`;
+    }
     const newEvent = { ...data, id: generateId() };
-    mockDb.newsEvents.push(newEvent); // Add to array
-    // Sort after adding, new items are typically pushed to end then sorted
+    mockDb.newsEvents.push(newEvent);
     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return JSON.parse(JSON.stringify(newEvent));
 };
@@ -438,8 +474,17 @@ export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 
     await delay(SIMULATED_DELAY);
     const index = mockDb.newsEvents.findIndex(n => n.id === id);
     if (index === -1) return null;
+    
+    // Ensure link uniqueness if it's being changed
+    if (data.link && data.link !== mockDb.newsEvents[index].link) {
+        const existingLinks = mockDb.newsEvents.filter(e => e.id !== id).map(e => e.link);
+        if (existingLinks.includes(data.link)) {
+             data.link = `${data.link}-${Date.now().toString().slice(-4)}`;
+        }
+    }
+
     mockDb.newsEvents[index] = { ...mockDb.newsEvents[index], ...data };
-     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return JSON.parse(JSON.stringify(mockDb.newsEvents[index]));
 };
 
