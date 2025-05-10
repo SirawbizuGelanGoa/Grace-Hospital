@@ -4,6 +4,9 @@
 export type SiteSettings = {
     hospitalName: string;
     logoUrl?: string;
+    facebookUrl?: string;
+    tiktokUrl?: string;
+    telegramUrl?: string;
 };
 
 export type Service = {
@@ -84,7 +87,10 @@ export type HeroSlide = {
 let mockDb = {
     siteSettings: {
         hospitalName: 'Grace Hospital',
-        logoUrl: '', // Example: 'https://example.com/logo.png' - Admin can set this
+        logoUrl: '', // Example: 'https://picsum.photos/100/40?random=logo', // Admin can set this
+        facebookUrl: 'https://facebook.com/gracehospital',
+        tiktokUrl: 'https://tiktok.com/@gracehospital',
+        telegramUrl: 'https://t.me/gracehospital',
     } as SiteSettings,
     heroSlides: [
         {
@@ -204,8 +210,8 @@ let mockDb = {
         { id: 'p4', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery4', alt: 'Hospital garden area', hint: 'hospital garden' },
         { id: 'p5', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery5', alt: 'Doctors consulting', hint: 'doctors consulting' },
         { id: 'p6', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery6', alt: 'Advanced medical equipment', hint: 'medical equipment' },
-        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' },
-        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' },
+        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' }, // This will show as an image. For actual video, use a video URL.
+        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' }, // This will show as an image. For actual video, use a video URL.
     ] as GalleryItem[],
     newsEvents: [
          { 

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSiteSettings, updateSiteSettings, SiteSettings } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image'; // For logo preview
+import { Facebook, Send, Video } from 'lucide-react'; // Social media icons
 
 // Define Zod schema for validation
 const siteSettingsSchema = z.object({
@@ -20,6 +21,9 @@ const siteSettingsSchema = z.object({
     if (!value) return true; // Allow empty or undefined
     return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
   }, { message: "Must be a valid URL or an uploaded image." }),
+  facebookUrl: z.string().url("Invalid Facebook URL").optional().or(z.literal('')),
+  tiktokUrl: z.string().url("Invalid TikTok URL").optional().or(z.literal('')),
+  telegramUrl: z.string().url("Invalid Telegram URL").optional().or(z.literal('')),
 });
 
 type SiteSettingsFormData = z.infer<typeof siteSettingsSchema>;
@@ -37,6 +41,9 @@ export default function ManageSettingsPage() {
     defaultValues: {
         hospitalName: '',
         logoUrl: '',
+        facebookUrl: '',
+        tiktokUrl: '',
+        telegramUrl: '',
     },
   });
 
@@ -89,6 +96,9 @@ export default function ManageSettingsPage() {
       const dataToSave = {
         ...data,
         logoUrl: data.logoUrl || '', // Ensure empty string if undefined
+        facebookUrl: data.facebookUrl || '',
+        tiktokUrl: data.tiktokUrl || '',
+        telegramUrl: data.telegramUrl || '',
       };
       const updatedSettings = await updateSiteSettings(dataToSave);
       reset(updatedSettings); 
@@ -133,6 +143,18 @@ export default function ManageSettingsPage() {
                     <Skeleton className="h-4 w-1/5" />
                     <Skeleton className="h-24 w-24" /> {/* Logo preview skeleton */}
                 </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
             </CardContent>
             <CardFooter>
                 <Skeleton className="h-10 w-24" />
@@ -145,7 +167,7 @@ export default function ManageSettingsPage() {
     <Card>
       <CardHeader>
         <CardTitle>Manage Site Settings</CardTitle>
-        <CardDescription>Update general website settings like hospital name and logo.</CardDescription>
+        <CardDescription>Update general website settings like hospital name, logo, and social media links.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
@@ -212,6 +234,24 @@ export default function ManageSettingsPage() {
                  </div>
             </div>
            )}
+
+            {/* Social Media Links */}
+            <div className="space-y-2">
+                <Label htmlFor="facebookUrl" className="flex items-center gap-2"><Facebook className="h-4 w-4 text-blue-600" /> Facebook URL</Label>
+                <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/yourpage" disabled={isSaving} />
+                {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="tiktokUrl" className="flex items-center gap-2"><Video className="h-4 w-4 text-black" /> TikTok URL</Label>
+                <Input id="tiktokUrl" {...register("tiktokUrl")} placeholder="https://tiktok.com/@yourprofile" disabled={isSaving} />
+                {errors.tiktokUrl && <p className="text-sm text-destructive">{errors.tiktokUrl.message}</p>}
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="telegramUrl" className="flex items-center gap-2"><Send className="h-4 w-4 text-sky-500" /> Telegram URL</Label>
+                <Input id="telegramUrl" {...register("telegramUrl")} placeholder="https://t.me/yourchannel" disabled={isSaving} />
+                {errors.telegramUrl && <p className="text-sm text-destructive">{errors.telegramUrl.message}</p>}
+            </div>
+
 
         </CardContent>
         <CardFooter>
