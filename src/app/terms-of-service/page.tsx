@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +12,8 @@ export default function TermsOfServicePage() {
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    setLastUpdatedDate(new Date().toLocaleDateString());
+    // Set date on client-side to prevent hydration mismatch
+    setLastUpdatedDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
   }, []);
 
   return (
@@ -23,10 +25,10 @@ export default function TermsOfServicePage() {
              <CardTitle className="text-3xl font-bold text-primary">Terms of Service</CardTitle>
            </CardHeader>
            <CardContent className="prose max-w-none">
-             <p><em>Last Updated: {lastUpdatedDate ? lastUpdatedDate : <Skeleton className="inline-block h-4 w-24" />}</em></p>
+            <p><em>Last Updated: {lastUpdatedDate === null ? <Skeleton className="inline-block h-4 w-32" /> : lastUpdatedDate}</em></p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">1. Acceptance of Terms</h2>
-             <p>By accessing or using the Grace Hospital website ([Your Website URL]) or its services, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you may not access the service.</p>
+             <p>By accessing or using the Grace Hospital website or its services, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you may not access the service.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">2. Use of Website</h2>
              <p>This website is intended to provide information about Grace Hospital and its services. The information provided is for general informational purposes only and does not constitute medical advice. You should always consult with a qualified healthcare provider for any health concerns or before making any decisions related to your health or treatment.</p>
@@ -49,7 +51,7 @@ export default function TermsOfServicePage() {
              <p>In no event shall Grace Hospital, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">6. Governing Law</h2>
-             <p>These Terms shall be governed and construed in accordance with the laws of [Your State/Country], without regard to its conflict of law provisions.</p>
+             <p>These Terms shall be governed and construed in accordance with the laws of Your State/Country, without regard to its conflict of law provisions.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">7. Changes</h2>
              <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will try to provide at least 30 days notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.</p>
@@ -63,3 +65,5 @@ export default function TermsOfServicePage() {
      </div>
   );
 }
+
+    

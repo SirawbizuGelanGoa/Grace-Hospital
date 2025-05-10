@@ -1,10 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Hospital, Facebook, Send, Video } from 'lucide-react'; // Added social icons
+import { Hospital, Facebook, Send, Video } from 'lucide-react'; 
 import { getSiteSettings, SiteSettings } from '@/lib/mock-data';
-import { Skeleton } from './ui/skeleton'; // For loading state
+import { Skeleton } from './ui/skeleton'; 
 
 const Footer = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -12,9 +13,12 @@ const Footer = () => {
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
+    // Set year on client-side to prevent hydration mismatch
+    setCurrentYear(new Date().getFullYear());
+
     const fetchSettings = async () => {
+      setIsLoading(true); // Set loading true before fetch
       try {
-        setIsLoading(true);
         const settings = await getSiteSettings();
         setSiteSettings(settings);
       } catch (error) {
@@ -25,9 +29,6 @@ const Footer = () => {
       }
     };
     fetchSettings();
-    
-    // Set year on client-side to ensure consistency
-    setCurrentYear(new Date().getFullYear());
   }, []);
 
   const hospitalName = siteSettings?.hospitalName || 'Grace Hospital';
@@ -37,10 +38,11 @@ const Footer = () => {
       <div className="container mx-auto px-4 text-center">
         <div className="flex justify-center items-center gap-2 mb-4 text-lg font-bold">
           <Hospital className="h-5 w-5" />
-          {isLoading ? <Skeleton className="h-6 w-32 bg-primary-foreground/20" /> : hospitalName}
+          {isLoading && !siteSettings ? <Skeleton className="h-6 w-32 bg-primary-foreground/20" /> : hospitalName}
         </div>
         <p className="text-sm mb-4">
-          &copy; {currentYear ?? <Skeleton className="inline-block h-4 w-10 bg-primary-foreground/20" />} {isLoading ? <Skeleton className="inline-block h-4 w-24 bg-primary-foreground/20" /> : hospitalName}. All rights reserved.
+          &copy; {currentYear === null ? <Skeleton className="inline-block h-4 w-10 bg-primary-foreground/20" /> : currentYear}{' '}
+          {isLoading && !siteSettings ? <Skeleton className="inline-block h-4 w-24 bg-primary-foreground/20" /> : hospitalName}. All rights reserved.
         </p>
         <div className="flex justify-center space-x-4 text-sm mb-6">
           <Link href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</Link>
@@ -85,3 +87,5 @@ const Footer = () => {
 };
 
 export default Footer;
+
+    

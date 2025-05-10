@@ -1,3 +1,4 @@
+
 // Simulate a simple in-memory database
 // In a real app, this would interact with an actual database.
 
@@ -83,11 +84,10 @@ export type HeroSlide = {
     ctaText?: string; // Optional call to action button text
 };
 
-
-let mockDb = {
+const initialMockDbData = {
     siteSettings: {
         hospitalName: 'Grace Hospital',
-        logoUrl: '', // Example: 'https://picsum.photos/100/40?random=logo', // Admin can set this
+        logoUrl: '', 
         facebookUrl: 'https://facebook.com/gracehospital',
         tiktokUrl: 'https://tiktok.com/@gracehospital',
         telegramUrl: 'https://t.me/gracehospital',
@@ -210,8 +210,8 @@ let mockDb = {
         { id: 'p4', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery4', alt: 'Hospital garden area', hint: 'hospital garden' },
         { id: 'p5', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery5', alt: 'Doctors consulting', hint: 'doctors consulting' },
         { id: 'p6', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery6', alt: 'Advanced medical equipment', hint: 'medical equipment' },
-        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' }, // This will show as an image. For actual video, use a video URL.
-        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' }, // This will show as an image. For actual video, use a video URL.
+        { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' }, 
+        { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' }, 
     ] as GalleryItem[],
     newsEvents: [
          { 
@@ -253,6 +253,50 @@ let mockDb = {
     } as ContactInfo,
 };
 
+let mockDb: typeof initialMockDbData;
+
+// Initialize mockDb
+if (typeof window !== 'undefined') {
+  const storedDbString = localStorage.getItem('mockDb');
+  if (storedDbString) {
+    try {
+      const storedDb = JSON.parse(storedDbString);
+      // Basic validation and merging to prevent breakage if structure changes
+      mockDb = {
+        siteSettings: { ...initialMockDbData.siteSettings, ...(storedDb.siteSettings || {}) },
+        heroSlides: Array.isArray(storedDb.heroSlides) ? storedDb.heroSlides : initialMockDbData.heroSlides,
+        about: { ...initialMockDbData.about, ...(storedDb.about || {}) },
+        services: Array.isArray(storedDb.services) ? storedDb.services : initialMockDbData.services,
+        facilities: Array.isArray(storedDb.facilities) ? storedDb.facilities : initialMockDbData.facilities,
+        departments: Array.isArray(storedDb.departments) ? storedDb.departments : initialMockDbData.departments,
+        gallery: Array.isArray(storedDb.gallery) ? storedDb.gallery : initialMockDbData.gallery,
+        newsEvents: Array.isArray(storedDb.newsEvents) ? storedDb.newsEvents : initialMockDbData.newsEvents,
+        contact: { ...initialMockDbData.contact, ...(storedDb.contact || {}) },
+      };
+    } catch (error) {
+      console.error("Error parsing mockDb from localStorage, using defaults:", error);
+      mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
+    }
+  } else {
+    mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
+  }
+} else {
+  // Server-side or environment without window
+  mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
+}
+
+
+const persistDb = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('mockDb', JSON.stringify(mockDb));
+    } catch (e) {
+      console.error("Error saving mockDb to localStorage", e);
+    }
+  }
+};
+
+
 // --- API Simulation ---
 
 // Helper for simulating delay
@@ -271,6 +315,7 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
 export const updateSiteSettings = async (data: Partial<SiteSettings>): Promise<SiteSettings> => {
     await delay(SIMULATED_DELAY);
     mockDb.siteSettings = { ...mockDb.siteSettings, ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.siteSettings));
 };
 
@@ -284,7 +329,8 @@ export const getHeroSlides = async (): Promise<HeroSlide[]> => {
 export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<HeroSlide> => {
     await delay(SIMULATED_DELAY);
     const newSlide = { ...data, id: generateId() };
-    mockDb.heroSlides.unshift(newSlide); // Add to beginning
+    mockDb.heroSlides.unshift(newSlide); 
+    persistDb();
     return JSON.parse(JSON.stringify(newSlide));
 };
 
@@ -293,6 +339,7 @@ export const updateHeroSlide = async (id: string, data: Partial<Omit<HeroSlide, 
     const index = mockDb.heroSlides.findIndex(s => s.id === id);
     if (index === -1) return null;
     mockDb.heroSlides[index] = { ...mockDb.heroSlides[index], ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.heroSlides[index]));
 };
 
@@ -300,7 +347,9 @@ export const deleteHeroSlide = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.heroSlides.length;
     mockDb.heroSlides = mockDb.heroSlides.filter(s => s.id !== id);
-    return mockDb.heroSlides.length < initialLength;
+    const success = mockDb.heroSlides.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 
@@ -313,6 +362,7 @@ export const getAboutContent = async (): Promise<AboutContent> => {
 export const updateAboutContent = async (data: AboutContent): Promise<AboutContent> => {
     await delay(SIMULATED_DELAY);
     mockDb.about = { ...mockDb.about, ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.about));
 };
 
@@ -331,6 +381,7 @@ export const createService = async (data: Omit<Service, 'id'>): Promise<Service>
     await delay(SIMULATED_DELAY);
     const newService = { ...data, id: generateId() };
     mockDb.services.unshift(newService);
+    persistDb();
     return JSON.parse(JSON.stringify(newService));
 };
 
@@ -339,6 +390,7 @@ export const updateService = async (id: string, data: Partial<Omit<Service, 'id'
     const index = mockDb.services.findIndex(s => s.id === id);
     if (index === -1) return null;
     mockDb.services[index] = { ...mockDb.services[index], ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.services[index]));
 };
 
@@ -346,7 +398,9 @@ export const deleteService = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.services.length;
     mockDb.services = mockDb.services.filter(s => s.id !== id);
-    return mockDb.services.length < initialLength;
+    const success = mockDb.services.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 // --- Facilities ---
@@ -364,6 +418,7 @@ export const createFacility = async (data: Omit<Facility, 'id'>): Promise<Facili
     await delay(SIMULATED_DELAY);
     const newFacility = { ...data, id: generateId() };
     mockDb.facilities.unshift(newFacility);
+    persistDb();
     return JSON.parse(JSON.stringify(newFacility));
 };
 
@@ -372,6 +427,7 @@ export const updateFacility = async (id: string, data: Partial<Omit<Facility, 'i
     const index = mockDb.facilities.findIndex(f => f.id === id);
     if (index === -1) return null;
     mockDb.facilities[index] = { ...mockDb.facilities[index], ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.facilities[index]));
 };
 
@@ -379,7 +435,9 @@ export const deleteFacility = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.facilities.length;
     mockDb.facilities = mockDb.facilities.filter(f => f.id !== id);
-    return mockDb.facilities.length < initialLength;
+    const success = mockDb.facilities.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 // --- Departments ---
@@ -397,6 +455,7 @@ export const createDepartment = async (data: Omit<Department, 'id'>): Promise<De
     await delay(SIMULATED_DELAY);
     const newDepartment = { ...data, id: generateId() };
     mockDb.departments.unshift(newDepartment);
+    persistDb();
     return JSON.parse(JSON.stringify(newDepartment));
 };
 
@@ -405,6 +464,7 @@ export const updateDepartment = async (id: string, data: Partial<Omit<Department
     const index = mockDb.departments.findIndex(d => d.id === id);
     if (index === -1) return null;
     mockDb.departments[index] = { ...mockDb.departments[index], ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.departments[index]));
 };
 
@@ -412,7 +472,9 @@ export const deleteDepartment = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.departments.length;
     mockDb.departments = mockDb.departments.filter(d => d.id !== id);
-    return mockDb.departments.length < initialLength;
+    const success = mockDb.departments.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 // --- Gallery ---
@@ -430,6 +492,7 @@ export const createGalleryItem = async (data: Omit<GalleryItem, 'id'>): Promise<
     await delay(SIMULATED_DELAY);
     const newItem = { ...data, id: generateId() };
     mockDb.gallery.unshift(newItem);
+    persistDb();
     return JSON.parse(JSON.stringify(newItem));
 };
 
@@ -438,6 +501,7 @@ export const updateGalleryItem = async (id: string, data: Partial<Omit<GalleryIt
     const index = mockDb.gallery.findIndex(g => g.id === id);
     if (index === -1) return null;
     mockDb.gallery[index] = { ...mockDb.gallery[index], ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.gallery[index]));
 };
 
@@ -445,7 +509,9 @@ export const deleteGalleryItem = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.gallery.length;
     mockDb.gallery = mockDb.gallery.filter(g => g.id !== id);
-    return mockDb.gallery.length < initialLength;
+    const success = mockDb.gallery.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 // --- News & Events ---
@@ -456,23 +522,19 @@ export const getNewsEvents = async (): Promise<NewsEvent[]> => {
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
     await delay(SIMULATED_DELAY);
-    // The link field is used as a unique slug, so we search by that.
-    // If `id` is truly the unique identifier, then search by `n.id === id`.
-    // For now, assuming `id` parameter corresponds to the `id` field.
     return JSON.parse(JSON.stringify(mockDb.newsEvents.find(n => n.id === id)));
 };
 
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<NewsEvent> => {
     await delay(SIMULATED_DELAY);
-    // Ensure the link is unique if it's used as a slug for routing
     const existingLinks = mockDb.newsEvents.map(e => e.link);
     if (existingLinks.includes(data.link)) {
-        // Basic way to make link unique, in real app, better slug generation is needed
         data.link = `${data.link}-${Date.now().toString().slice(-4)}`;
     }
     const newEvent = { ...data, id: generateId() };
-    mockDb.newsEvents.push(newEvent);
+    mockDb.newsEvents.push(newEvent); // Add to end, then sort
     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    persistDb();
     return JSON.parse(JSON.stringify(newEvent));
 };
 
@@ -481,7 +543,6 @@ export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 
     const index = mockDb.newsEvents.findIndex(n => n.id === id);
     if (index === -1) return null;
     
-    // Ensure link uniqueness if it's being changed
     if (data.link && data.link !== mockDb.newsEvents[index].link) {
         const existingLinks = mockDb.newsEvents.filter(e => e.id !== id).map(e => e.link);
         if (existingLinks.includes(data.link)) {
@@ -491,6 +552,7 @@ export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 
 
     mockDb.newsEvents[index] = { ...mockDb.newsEvents[index], ...data };
     mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.newsEvents[index]));
 };
 
@@ -498,7 +560,9 @@ export const deleteNewsEvent = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
     const initialLength = mockDb.newsEvents.length;
     mockDb.newsEvents = mockDb.newsEvents.filter(n => n.id !== id);
-    return mockDb.newsEvents.length < initialLength;
+    const success = mockDb.newsEvents.length < initialLength;
+    if (success) persistDb();
+    return success;
 };
 
 
@@ -511,6 +575,7 @@ export const getContactInfo = async (): Promise<ContactInfo> => {
 export const updateContactInfo = async (data: ContactInfo): Promise<ContactInfo> => {
     await delay(SIMULATED_DELAY);
     mockDb.contact = { ...mockDb.contact, ...data };
+    persistDb();
     return JSON.parse(JSON.stringify(mockDb.contact));
 };
 
@@ -522,3 +587,5 @@ export const verifyAdminCredentials = async (username?: string, password?: strin
     await delay(SIMULATED_DELAY * 2); 
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +11,8 @@ export default function PrivacyPolicyPage() {
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    setLastUpdatedDate(new Date().toLocaleDateString());
+    // Set date on client-side to prevent hydration mismatch
+    setLastUpdatedDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
   }, []);
 
   return (
@@ -22,10 +24,10 @@ export default function PrivacyPolicyPage() {
              <CardTitle className="text-3xl font-bold text-primary">Privacy Policy</CardTitle>
            </CardHeader>
            <CardContent className="prose max-w-none">
-             <p><em>Last Updated: {lastUpdatedDate ? lastUpdatedDate : <Skeleton className="inline-block h-4 w-24" />}</em></p>
+             <p><em>Last Updated: {lastUpdatedDate === null ? <Skeleton className="inline-block h-4 w-32" /> : lastUpdatedDate}</em></p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">Introduction</h2>
-             <p>Grace Hospital ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website [Your Website URL] or use our services.</p>
+             <p>Grace Hospital ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our services.</p>
 
              <h2 className="text-xl font-semibold mt-6 mb-2 text-primary">Information We Collect</h2>
              <p>We may collect personal information such as:</p>
@@ -66,3 +68,5 @@ export default function PrivacyPolicyPage() {
     </div>
   );
 }
+
+    
