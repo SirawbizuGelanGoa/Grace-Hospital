@@ -70,7 +70,7 @@ export type ContactInfo = {
     address: string;
     phone: string;
     email: string;
-    mapPlaceholder?: string; // Or store actual map coordinates/embed URL
+    mapPlaceholder?: string; // Can be coordinates "lat,lng", a full embed URL, or placeholder text
 };
 
 export type HeroSlide = {
@@ -249,7 +249,7 @@ const initialMockDbData = {
         address: '123 Grace Hospital Way, Healthville, ST 54321', 
         phone: '(123) 456-7890',
         email: 'info@gracehospital.example', 
-        mapPlaceholder: 'Map Placeholder - Coordinates or Embed URL would go here',
+        mapPlaceholder: '34.052235,-118.243683', // Example: Los Angeles City Hall coordinates
     } as ContactInfo,
 };
 
@@ -522,7 +522,9 @@ export const getNewsEvents = async (): Promise<NewsEvent[]> => {
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
     await delay(SIMULATED_DELAY);
-    return JSON.parse(JSON.stringify(mockDb.newsEvents.find(n => n.id === id)));
+    // Match by ID or by link if ID is not found (for slug-based routing)
+    const item = mockDb.newsEvents.find(n => n.id === id || n.link === `/news/${id}`);
+    return JSON.parse(JSON.stringify(item));
 };
 
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<NewsEvent> => {
@@ -587,5 +589,3 @@ export const verifyAdminCredentials = async (username?: string, password?: strin
     await delay(SIMULATED_DELAY * 2); 
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
 }
-
-    

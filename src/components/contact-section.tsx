@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Phone, Mail, MapPin } from 'lucide-react';
-import { getContactInfo, ContactInfo } from '@/lib/mock-data'; // Import data fetching function and type
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { getContactInfo, ContactInfo } from '@/lib/mock-data'; 
+import { Skeleton } from '@/components/ui/skeleton'; 
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -25,7 +25,6 @@ const ContactSection = () => {
         setContactDetails(data);
       } catch (error) {
         console.error("Failed to fetch contact info:", error);
-        // Optionally set an error state here
       } finally {
         setIsLoading(false);
       }
@@ -43,21 +42,68 @@ const ContactSection = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitMessage('');
-
-    // Placeholder for actual form submission logic (e.g., API call to a serverless function or backend)
     try {
-      // Simulate API call
       console.log('Submitting form data:', formData);
       await new Promise(resolve => setTimeout(resolve, 1500));
       console.log('Form submitted successfully:', formData);
       setSubmitMessage('Thank you for your message! We will get back to you soon.');
-      setFormData({ name: '', email: '', message: '' }); // Clear form
+      setFormData({ name: '', email: '', message: '' }); 
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitMessage('Failed to send message. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const renderMapContent = () => {
+    const mapValue = contactDetails?.mapPlaceholder;
+
+    if (!mapValue) {
+      return <p className="text-sm text-foreground">Map not available.</p>;
+    }
+
+    if (mapValue.startsWith('http://') || mapValue.startsWith('https://')) {
+      // Assume it's a full embed URL
+      return (
+        <iframe
+          src={mapValue}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen={true}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Location Map"
+          className="rounded-lg"
+        ></iframe>
+      );
+    }
+
+    // Try to parse as coordinates "lat,lng"
+    const coordsRegex = /^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/;
+    const match = mapValue.match(coordsRegex);
+    if (match) {
+      const lat = match[1];
+      const lng = match[3]; // Corrected index for longitude
+      const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed&hl=en`;
+      return (
+        <iframe
+          src={embedUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen={true}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Location Map"
+          className="rounded-lg"
+        ></iframe>
+      );
+    }
+
+    // If not a URL and not coordinates, display as text
+    return <p className="text-sm text-foreground">{mapValue}</p>;
   };
 
 
@@ -87,7 +133,7 @@ const ContactSection = () => {
                        <Skeleton className="h-6 w-6 rounded-full shrink-0" />
                        <Skeleton className="h-5 w-2/3" />
                      </div>
-                      <Skeleton className="mt-6 h-48 w-full rounded-lg" />
+                      <Skeleton className="mt-6 h-64 md:h-80 w-full rounded-lg" />
                     </>
                  ) : contactDetails ? (
                   <>
@@ -103,9 +149,9 @@ const ContactSection = () => {
                      <Mail className="h-6 w-6 text-accent shrink-0" />
                      <a href={`mailto:${contactDetails.email}`} className="hover:text-primary">{contactDetails.email}</a>
                    </div>
-                   {/* Placeholder for Map */}
-                   <div className="mt-6 h-48 bg-muted rounded-lg flex items-center justify-center text-sm text-foreground">
-                      {contactDetails.mapPlaceholder || 'Map Placeholder'}
+                   {/* Map container */}
+                   <div className="mt-6 h-64 md:h-80 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                      {renderMapContent()}
                    </div>
                   </>
                  ) : (
