@@ -71,20 +71,20 @@ const FacilitiesSection = () => {
                 <DialogTrigger asChild>
                   <Card
                     onClick={() => handleFacilityClick(facility)}
-                    className="shadow-lg flex flex-col cursor-pointer hover:shadow-xl transition-shadow duration-300"
+                    className="shadow-lg flex flex-col cursor-pointer group hover:shadow-xl hover:bg-destructive transition-all duration-300"
                     aria-label={`View details for ${facility.name}`}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFacilityClick(facility);}}
                   >
                     <CardHeader className="flex flex-row items-center gap-4 pb-4">
-                      <div className="bg-accent text-accent-foreground rounded-full p-3">
+                      <div className="bg-accent text-accent-foreground rounded-full p-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                         <DynamicIcon name={facility.iconName} className="h-6 w-6" />
                       </div>
-                      <CardTitle className="text-lg font-semibold text-primary">{facility.name}</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-primary group-hover:text-destructive-foreground transition-colors duration-300">{facility.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-grow">
-                      <p className="text-muted-foreground">{facility.description}</p>
+                      <p className="text-muted-foreground group-hover:text-destructive-foreground transition-colors duration-300">{facility.description}</p>
                     </CardContent>
                   </Card>
                 </DialogTrigger>
@@ -122,3 +122,4 @@ const FacilitiesSection = () => {
 };
 
 export default FacilitiesSection;
+
