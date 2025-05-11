@@ -84,14 +84,24 @@ export type HeroSlide = {
     ctaText?: string; // Optional call to action button text
 };
 
-const initialMockDbData = {
+const initialMockDbData: {
+    siteSettings: SiteSettings;
+    heroSlides: HeroSlide[];
+    about: AboutContent;
+    services: Service[];
+    facilities: Facility[];
+    departments: Department[];
+    gallery: GalleryItem[];
+    newsEvents: NewsEvent[];
+    contact: ContactInfo;
+} = {
     siteSettings: {
         hospitalName: 'Grace Hospital',
         logoUrl: '', 
         facebookUrl: 'https://facebook.com/gracehospital',
         tiktokUrl: 'https://tiktok.com/@gracehospital',
         telegramUrl: 'https://t.me/gracehospital',
-    } as SiteSettings,
+    },
     heroSlides: [
         {
             id: 'hs1',
@@ -123,7 +133,7 @@ const initialMockDbData = {
             ctaLink: '#facilities',
             ctaText: 'Explore Facilities',
         },
-    ] as HeroSlide[],
+    ],
     about: {
         title: 'About Grace Hospital', 
         description: 'Grace Hospital is committed to providing exceptional healthcare services with compassion and expertise. Our state-of-the-art facility is equipped with the latest technology, and our dedicated team of medical professionals works tirelessly to ensure the well-being of our patients. We believe in a patient-centric approach, offering personalized care tailored to individual needs.',
@@ -131,7 +141,7 @@ const initialMockDbData = {
         vision: 'Our vision is to be the leading healthcare provider in the region, recognized for clinical excellence, patient satisfaction, and innovation.',
         imageUrl: 'https://picsum.photos/600/400?random=aboutGrace',
         imageHint: 'hospital staff',
-    } as AboutContent,
+    },
     services: [
         { id: '1', name: 'General Medicine', description: 'Comprehensive care for adults and children.', detailedDescription: 'Our General Medicine department provides a wide range of services including routine check-ups, preventive care, management of chronic illnesses, and treatment for acute medical conditions. We focus on holistic patient health.', iconName: 'Stethoscope' },
         { id: '2', name: 'Cardiology', description: 'Expert heart care and diagnostics.', detailedDescription: 'The Cardiology department specializes in the diagnosis and treatment of heart diseases and cardiovascular conditions. We offer advanced diagnostic tools like ECG, echocardiography, and stress tests, along with personalized treatment plans.', iconName: 'HeartPulse' },
@@ -139,14 +149,14 @@ const initialMockDbData = {
         { id: '4', name: 'Orthopedics', description: 'Advanced care for bones and joints.', detailedDescription: 'The Orthopedics department offers comprehensive care for bone, joint, ligament, tendon, and muscle injuries and conditions. We provide surgical and non-surgical treatments, including joint replacement and sports medicine.', iconName: 'Bone' },
         { id: '5', name: 'Pediatrics', description: 'Dedicated healthcare for infants and children.', detailedDescription: 'Our Pediatrics department provides compassionate and comprehensive care for children from infancy through adolescence. Services include well-child visits, immunizations, and treatment for common and complex childhood illnesses.', iconName: 'Baby' },
         { id: '6', name: 'Laboratory Services', description: 'Accurate diagnostic testing.', detailedDescription: 'Our state-of-the-art laboratory offers a full range of diagnostic tests, providing accurate and timely results to support patient care. We adhere to the highest standards of quality and precision.', iconName: 'Microscope' },
-    ] as Service[],
+    ],
     facilities: [
         { id: 'f1', name: 'Modern Patient Rooms', description: 'Comfortable and well-equipped for recovery.', iconName: 'BedDouble', imageUrl: 'https://picsum.photos/600/400?random=facility1', imageHint: 'patient room', detailedDescription: 'Our modern patient rooms are designed for comfort and recovery. Each room features an adjustable bed, private bathroom, television, and a call system for immediate assistance. We offer both private and semi-private options to suit patient needs and preferences, ensuring a restful environment for healing.' },
         { id: 'f2', name: 'Advanced Laboratory', description: 'State-of-the-art diagnostic testing.', iconName: 'FlaskConical', imageUrl: 'https://picsum.photos/600/400?random=facility2', imageHint: 'science lab', detailedDescription: 'Equipped with the latest technology, our advanced laboratory provides a comprehensive range of diagnostic tests. Our skilled technicians and pathologists work to deliver accurate and timely results, crucial for effective treatment planning and patient care.' },
         { id: 'f3', name: 'Intensive Care Unit (ICU)', description: 'Specialized critical care 24/7.', iconName: 'Activity', imageUrl: 'https://picsum.photos/600/400?random=facility3', imageHint: 'icu room', detailedDescription: 'The Intensive Care Unit (ICU) at Grace Hospital is a specialized facility dedicated to patients requiring constant monitoring and intensive medical care. Our ICU is staffed by critical care specialists and equipped with advanced life support systems to manage complex cases.' },
         { id: 'f4', name: 'Outpatient Clinics', description: 'Convenient specialist consultations.', iconName: 'Stethoscope', imageUrl: 'https://picsum.photos/600/400?random=facility4', imageHint: 'doctor office', detailedDescription: 'Our Outpatient Clinics offer easy access to a variety of medical specialists for consultations, follow-up appointments, and minor procedures. We aim to provide timely and efficient care in a comfortable setting, reducing the need for hospital admission when possible.' },
         { id: 'f5', name: 'Emergency Department', description: '24/7 immediate medical attention.', iconName: 'Hospital', imageUrl: 'https://picsum.photos/600/400?random=facility5', imageHint: 'emergency room', detailedDescription: 'Grace Hospital\'s Emergency Department operates around the clock, providing immediate medical attention for urgent and life-threatening conditions. Our experienced emergency physicians, nurses, and support staff are prepared to handle a wide range of medical emergencies with speed and expertise.' },
-    ] as Facility[],
+    ],
     departments: [
         { 
             id: 'd1', 
@@ -202,7 +212,7 @@ const initialMockDbData = {
             headOfDepartmentImage: 'https://picsum.photos/300/300?random=hod6',
             headOfDepartmentImageHint: 'oncologist caring'
         },
-    ] as Department[],
+    ],
     gallery: [
         { id: 'p1', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery1', alt: 'Hospital lobby', hint: 'hospital lobby' },
         { id: 'p2', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery2', alt: 'Modern operating room', hint: 'operating room' },
@@ -212,7 +222,7 @@ const initialMockDbData = {
         { id: 'p6', type: 'photo', src: 'https://picsum.photos/400/300?random=gallery6', alt: 'Advanced medical equipment', hint: 'medical equipment' },
         { id: 'v1', type: 'video', src: 'https://picsum.photos/400/300?random=video1', alt: 'Hospital Tour Video Placeholder', hint: 'hospital video' }, 
         { id: 'v2', type: 'video', src: 'https://picsum.photos/400/300?random=video2', alt: 'Patient Testimonial Video Placeholder', hint: 'patient testimonial' }, 
-    ] as GalleryItem[],
+    ],
     newsEvents: [
          { 
             id: 'n1', 
@@ -244,48 +254,16 @@ const initialMockDbData = {
             link: '/news/dr-carter-joins', 
             hint: 'doctor portrait' 
         },
-     ] as NewsEvent[],
+     ],
     contact: {
         address: '123 Grace Hospital Way, Healthville, ST 54321', 
         phone: '(123) 456-7890',
         email: 'info@gracehospital.example', 
         mapPlaceholder: '34.052235,-118.243683', // Example: Los Angeles City Hall coordinates
-    } as ContactInfo,
+    },
 };
 
-let mockDb: typeof initialMockDbData;
-
-// Initialize mockDb
-if (typeof window !== 'undefined') {
-  const storedDbString = localStorage.getItem('mockDb');
-  if (storedDbString) {
-    try {
-      const storedDb = JSON.parse(storedDbString);
-      // Basic validation and merging to prevent breakage if structure changes
-      mockDb = {
-        siteSettings: { ...initialMockDbData.siteSettings, ...(storedDb.siteSettings || {}) },
-        heroSlides: Array.isArray(storedDb.heroSlides) ? storedDb.heroSlides : initialMockDbData.heroSlides,
-        about: { ...initialMockDbData.about, ...(storedDb.about || {}) },
-        services: Array.isArray(storedDb.services) ? storedDb.services : initialMockDbData.services,
-        facilities: Array.isArray(storedDb.facilities) ? storedDb.facilities : initialMockDbData.facilities,
-        departments: Array.isArray(storedDb.departments) ? storedDb.departments : initialMockDbData.departments,
-        gallery: Array.isArray(storedDb.gallery) ? storedDb.gallery : initialMockDbData.gallery,
-        newsEvents: Array.isArray(storedDb.newsEvents) ? storedDb.newsEvents : initialMockDbData.newsEvents,
-        contact: { ...initialMockDbData.contact, ...(storedDb.contact || {}) },
-      };
-    } catch (error) {
-      console.error("Error parsing mockDb from localStorage, using defaults:", error);
-      mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
-    }
-  } else {
-    mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
-    localStorage.setItem('mockDb', JSON.stringify(mockDb)); // Persist initial state if nothing was there
-  }
-} else {
-  // Server-side or environment without window
-  mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
-}
-
+let mockDb: typeof initialMockDbData = JSON.parse(JSON.stringify(initialMockDbData));
 
 const persistDb = () => {
   if (typeof window !== 'undefined') {
@@ -297,35 +275,57 @@ const persistDb = () => {
   }
 };
 
-// Helper function to re-initialize in-memory mockDb from localStorage if available
-const reinitializeMockDbFromStorage = () => {
-    if (typeof window !== 'undefined') {
-      const storedDbString = localStorage.getItem('mockDb');
-      if (storedDbString) {
-        try {
-          const storedDb = JSON.parse(storedDbString);
-          // Update the global mockDb object with the parsed data
-          // This ensures all parts of mockDb are updated, not just one slice like 'gallery'
-          // Fallback to current in-memory mockDb values if a section is missing in storedDb, to be safe
-          Object.assign(mockDb, {
-            siteSettings: { ...initialMockDbData.siteSettings, ...(storedDb.siteSettings || mockDb.siteSettings) },
-            heroSlides: Array.isArray(storedDb.heroSlides) ? storedDb.heroSlides : mockDb.heroSlides,
-            about: { ...initialMockDbData.about, ...(storedDb.about || mockDb.about) },
-            services: Array.isArray(storedDb.services) ? storedDb.services : mockDb.services,
-            facilities: Array.isArray(storedDb.facilities) ? storedDb.facilities : mockDb.facilities,
-            departments: Array.isArray(storedDb.departments) ? storedDb.departments : mockDb.departments,
-            gallery: Array.isArray(storedDb.gallery) ? storedDb.gallery : mockDb.gallery,
-            newsEvents: Array.isArray(storedDb.newsEvents) ? storedDb.newsEvents : mockDb.newsEvents,
-            contact: { ...initialMockDbData.contact, ...(storedDb.contact || mockDb.contact) },
-          });
-        } catch (error) {
-          console.error("Error parsing mockDb from localStorage during reinitialization. In-memory DB might be stale.", error);
+// Function to load DB from localStorage or use initial data.
+// This should be called at the beginning of any function that reads data.
+const loadDb = () => {
+  if (typeof window !== 'undefined') {
+    const storedDbString = localStorage.getItem('mockDb');
+    if (storedDbString) {
+      try {
+        const storedDbParsed = JSON.parse(storedDbString);
+        // Create a new state based on initialMockDbData, then overwrite with stored values
+        const newDbState = JSON.parse(JSON.stringify(initialMockDbData)); 
+        
+        for (const key in newDbState) {
+          if (storedDbParsed.hasOwnProperty(key)) {
+            // Type checking to ensure structure compatibility (basic check)
+            if (typeof (newDbState as any)[key] === typeof storedDbParsed[key]) {
+                 // For arrays and objects, ensure they are deeply assigned
+                 if (Array.isArray((newDbState as any)[key])) {
+                    (newDbState as any)[key] = JSON.parse(JSON.stringify(storedDbParsed[key]));
+                 } else if (typeof (newDbState as any)[key] === 'object' && (newDbState as any)[key] !== null) {
+                     (newDbState as any)[key] = { ...((initialMockDbData as any)[key] || {}), ...storedDbParsed[key] };
+                 }
+                 else { // Primitives
+                    (newDbState as any)[key] = storedDbParsed[key];
+                 }
+            } else if (storedDbParsed[key] === null && typeof (newDbState as any)[key] === 'object') {
+                // Allow null to overwrite objects if that's the stored state (e.g. logoUrl: null)
+                (newDbState as any)[key] = null;
+            }
+          }
         }
+        mockDb = newDbState;
+      } catch (error) {
+        console.error("Error parsing mockDb from localStorage. Resetting to initial state.", error);
+        mockDb = JSON.parse(JSON.stringify(initialMockDbData));
+        persistDb(); // Save the clean initial state
       }
-      // If storedDbString is null, it means localStorage is empty or 'mockDb' key doesn't exist.
-      // The in-memory 'mockDb' (initialized at module load or by previous operations) should be used.
+    } else {
+      // No DB in localStorage, use initial data and persist it.
+      mockDb = JSON.parse(JSON.stringify(initialMockDbData));
+      persistDb();
     }
-  };
+  }
+  // For SSR or non-browser environments, mockDb remains the initial deep copy.
+};
+
+
+// Call loadDb once when the module is first imported on the client-side.
+// This ensures that the in-memory mockDb is initialized correctly.
+if (typeof window !== 'undefined') {
+  loadDb();
+}
 
 
 // --- API Simulation ---
@@ -340,12 +340,13 @@ const generateId = () => Date.now().toString() + Math.random().toString(36).subs
 // --- Site Settings ---
 export const getSiteSettings = async (): Promise<SiteSettings> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.siteSettings));
 };
 
 export const updateSiteSettings = async (data: Partial<SiteSettings>): Promise<SiteSettings> => {
     await delay(SIMULATED_DELAY);
+    loadDb(); // Ensure we're updating the latest version
     mockDb.siteSettings = { ...mockDb.siteSettings, ...data };
     persistDb();
     return JSON.parse(JSON.stringify(mockDb.siteSettings));
@@ -355,12 +356,13 @@ export const updateSiteSettings = async (data: Partial<SiteSettings>): Promise<S
 // --- Hero Slides ---
 export const getHeroSlides = async (): Promise<HeroSlide[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.heroSlides));
 };
 
 export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<HeroSlide> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const newSlide = { ...data, id: generateId() };
     mockDb.heroSlides.unshift(newSlide); 
     persistDb();
@@ -369,6 +371,7 @@ export const createHeroSlide = async (data: Omit<HeroSlide, 'id'>): Promise<Hero
 
 export const updateHeroSlide = async (id: string, data: Partial<Omit<HeroSlide, 'id'>>): Promise<HeroSlide | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.heroSlides.findIndex(s => s.id === id);
     if (index === -1) return null;
     mockDb.heroSlides[index] = { ...mockDb.heroSlides[index], ...data };
@@ -378,6 +381,7 @@ export const updateHeroSlide = async (id: string, data: Partial<Omit<HeroSlide, 
 
 export const deleteHeroSlide = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.heroSlides.length;
     mockDb.heroSlides = mockDb.heroSlides.filter(s => s.id !== id);
     const success = mockDb.heroSlides.length < initialLength;
@@ -389,12 +393,13 @@ export const deleteHeroSlide = async (id: string): Promise<boolean> => {
 // --- About ---
 export const getAboutContent = async (): Promise<AboutContent> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.about)); 
 };
 
 export const updateAboutContent = async (data: AboutContent): Promise<AboutContent> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     mockDb.about = { ...mockDb.about, ...data };
     persistDb();
     return JSON.parse(JSON.stringify(mockDb.about));
@@ -403,18 +408,19 @@ export const updateAboutContent = async (data: AboutContent): Promise<AboutConte
 // --- Services ---
 export const getServices = async (): Promise<Service[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.services)); 
 };
 
 export const getServiceById = async (id: string): Promise<Service | undefined> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.services.find(s => s.id === id)));
 };
 
 export const createService = async (data: Omit<Service, 'id'>): Promise<Service> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const newService = { ...data, id: generateId() };
     mockDb.services.unshift(newService);
     persistDb();
@@ -423,6 +429,7 @@ export const createService = async (data: Omit<Service, 'id'>): Promise<Service>
 
 export const updateService = async (id: string, data: Partial<Omit<Service, 'id'>>): Promise<Service | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.services.findIndex(s => s.id === id);
     if (index === -1) return null;
     mockDb.services[index] = { ...mockDb.services[index], ...data };
@@ -432,6 +439,7 @@ export const updateService = async (id: string, data: Partial<Omit<Service, 'id'
 
 export const deleteService = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.services.length;
     mockDb.services = mockDb.services.filter(s => s.id !== id);
     const success = mockDb.services.length < initialLength;
@@ -442,18 +450,19 @@ export const deleteService = async (id: string): Promise<boolean> => {
 // --- Facilities ---
 export const getFacilities = async (): Promise<Facility[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.facilities));
 };
 
 export const getFacilityById = async (id: string): Promise<Facility | undefined> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.facilities.find(f => f.id === id)));
 };
 
 export const createFacility = async (data: Omit<Facility, 'id'>): Promise<Facility> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const newFacility = { ...data, id: generateId() };
     mockDb.facilities.unshift(newFacility);
     persistDb();
@@ -462,6 +471,7 @@ export const createFacility = async (data: Omit<Facility, 'id'>): Promise<Facili
 
 export const updateFacility = async (id: string, data: Partial<Omit<Facility, 'id'>>): Promise<Facility | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.facilities.findIndex(f => f.id === id);
     if (index === -1) return null;
     mockDb.facilities[index] = { ...mockDb.facilities[index], ...data };
@@ -471,6 +481,7 @@ export const updateFacility = async (id: string, data: Partial<Omit<Facility, 'i
 
 export const deleteFacility = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.facilities.length;
     mockDb.facilities = mockDb.facilities.filter(f => f.id !== id);
     const success = mockDb.facilities.length < initialLength;
@@ -481,18 +492,19 @@ export const deleteFacility = async (id: string): Promise<boolean> => {
 // --- Departments ---
 export const getDepartments = async (): Promise<Department[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.departments));
 };
 
 export const getDepartmentById = async (id: string): Promise<Department | undefined> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.departments.find(d => d.id === id)));
 };
 
 export const createDepartment = async (data: Omit<Department, 'id'>): Promise<Department> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const newDepartment = { ...data, id: generateId() };
     mockDb.departments.unshift(newDepartment);
     persistDb();
@@ -501,6 +513,7 @@ export const createDepartment = async (data: Omit<Department, 'id'>): Promise<De
 
 export const updateDepartment = async (id: string, data: Partial<Omit<Department, 'id'>>): Promise<Department | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.departments.findIndex(d => d.id === id);
     if (index === -1) return null;
     mockDb.departments[index] = { ...mockDb.departments[index], ...data };
@@ -510,6 +523,7 @@ export const updateDepartment = async (id: string, data: Partial<Omit<Department
 
 export const deleteDepartment = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.departments.length;
     mockDb.departments = mockDb.departments.filter(d => d.id !== id);
     const success = mockDb.departments.length < initialLength;
@@ -520,18 +534,19 @@ export const deleteDepartment = async (id: string): Promise<boolean> => {
 // --- Gallery ---
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage(); 
+    loadDb(); 
     return JSON.parse(JSON.stringify(mockDb.gallery));
 };
 
 export const getGalleryItemById = async (id: string): Promise<GalleryItem | undefined> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.gallery.find(g => g.id === id)));
 };
 
 export const createGalleryItem = async (data: Omit<GalleryItem, 'id'>): Promise<GalleryItem> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const newItem = { ...data, id: generateId() };
     mockDb.gallery.unshift(newItem);
     persistDb();
@@ -540,6 +555,7 @@ export const createGalleryItem = async (data: Omit<GalleryItem, 'id'>): Promise<
 
 export const updateGalleryItem = async (id: string, data: Partial<Omit<GalleryItem, 'id'>>): Promise<GalleryItem | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.gallery.findIndex(g => g.id === id);
     if (index === -1) return null;
     mockDb.gallery[index] = { ...mockDb.gallery[index], ...data };
@@ -549,6 +565,7 @@ export const updateGalleryItem = async (id: string, data: Partial<Omit<GalleryIt
 
 export const deleteGalleryItem = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.gallery.length;
     mockDb.gallery = mockDb.gallery.filter(g => g.id !== id);
     const success = mockDb.gallery.length < initialLength;
@@ -559,13 +576,13 @@ export const deleteGalleryItem = async (id: string): Promise<boolean> => {
 // --- News & Events ---
 export const getNewsEvents = async (): Promise<NewsEvent[]> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())));
 };
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     // Match by ID or by link if ID is not found (for slug-based routing)
     const item = mockDb.newsEvents.find(n => n.id === id || n.link === `/news/${id}`);
     return JSON.parse(JSON.stringify(item));
@@ -573,8 +590,10 @@ export const getNewsEventById = async (id: string): Promise<NewsEvent | undefine
 
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<NewsEvent> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const existingLinks = mockDb.newsEvents.map(e => e.link);
     if (existingLinks.includes(data.link)) {
+        // Ensure link uniqueness if it already exists
         data.link = `${data.link}-${Date.now().toString().slice(-4)}`;
     }
     const newEvent = { ...data, id: generateId() };
@@ -586,9 +605,11 @@ export const createNewsEvent = async (data: Omit<NewsEvent, 'id'>): Promise<News
 
 export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 'id'>>): Promise<NewsEvent | null> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const index = mockDb.newsEvents.findIndex(n => n.id === id);
     if (index === -1) return null;
     
+    // Ensure link uniqueness if changed
     if (data.link && data.link !== mockDb.newsEvents[index].link) {
         const existingLinks = mockDb.newsEvents.filter(e => e.id !== id).map(e => e.link);
         if (existingLinks.includes(data.link)) {
@@ -604,6 +625,7 @@ export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 
 
 export const deleteNewsEvent = async (id: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     const initialLength = mockDb.newsEvents.length;
     mockDb.newsEvents = mockDb.newsEvents.filter(n => n.id !== id);
     const success = mockDb.newsEvents.length < initialLength;
@@ -615,12 +637,13 @@ export const deleteNewsEvent = async (id: string): Promise<boolean> => {
 // --- Contact Info ---
 export const getContactInfo = async (): Promise<ContactInfo> => {
     await delay(SIMULATED_DELAY);
-    reinitializeMockDbFromStorage();
+    loadDb();
     return JSON.parse(JSON.stringify(mockDb.contact));
 };
 
 export const updateContactInfo = async (data: ContactInfo): Promise<ContactInfo> => {
     await delay(SIMULATED_DELAY);
+    loadDb();
     mockDb.contact = { ...mockDb.contact, ...data };
     persistDb();
     return JSON.parse(JSON.stringify(mockDb.contact));
@@ -633,4 +656,4 @@ const MOCK_ADMIN_PASSWORD = 'password123';
 export const verifyAdminCredentials = async (username?: string, password?: string): Promise<boolean> => {
     await delay(SIMULATED_DELAY * 2); 
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
-}
+};
