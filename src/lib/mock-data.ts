@@ -279,6 +279,7 @@ if (typeof window !== 'undefined') {
     }
   } else {
     mockDb = JSON.parse(JSON.stringify(initialMockDbData)); // Deep copy
+    localStorage.setItem('mockDb', JSON.stringify(mockDb)); // Persist initial state if nothing was there
   }
 } else {
   // Server-side or environment without window
@@ -296,6 +297,36 @@ const persistDb = () => {
   }
 };
 
+// Helper function to re-initialize in-memory mockDb from localStorage if available
+const reinitializeMockDbFromStorage = () => {
+    if (typeof window !== 'undefined') {
+      const storedDbString = localStorage.getItem('mockDb');
+      if (storedDbString) {
+        try {
+          const storedDb = JSON.parse(storedDbString);
+          // Update the global mockDb object with the parsed data
+          // This ensures all parts of mockDb are updated, not just one slice like 'gallery'
+          // Fallback to current in-memory mockDb values if a section is missing in storedDb, to be safe
+          Object.assign(mockDb, {
+            siteSettings: { ...initialMockDbData.siteSettings, ...(storedDb.siteSettings || mockDb.siteSettings) },
+            heroSlides: Array.isArray(storedDb.heroSlides) ? storedDb.heroSlides : mockDb.heroSlides,
+            about: { ...initialMockDbData.about, ...(storedDb.about || mockDb.about) },
+            services: Array.isArray(storedDb.services) ? storedDb.services : mockDb.services,
+            facilities: Array.isArray(storedDb.facilities) ? storedDb.facilities : mockDb.facilities,
+            departments: Array.isArray(storedDb.departments) ? storedDb.departments : mockDb.departments,
+            gallery: Array.isArray(storedDb.gallery) ? storedDb.gallery : mockDb.gallery,
+            newsEvents: Array.isArray(storedDb.newsEvents) ? storedDb.newsEvents : mockDb.newsEvents,
+            contact: { ...initialMockDbData.contact, ...(storedDb.contact || mockDb.contact) },
+          });
+        } catch (error) {
+          console.error("Error parsing mockDb from localStorage during reinitialization. In-memory DB might be stale.", error);
+        }
+      }
+      // If storedDbString is null, it means localStorage is empty or 'mockDb' key doesn't exist.
+      // The in-memory 'mockDb' (initialized at module load or by previous operations) should be used.
+    }
+  };
+
 
 // --- API Simulation ---
 
@@ -309,6 +340,7 @@ const generateId = () => Date.now().toString() + Math.random().toString(36).subs
 // --- Site Settings ---
 export const getSiteSettings = async (): Promise<SiteSettings> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.siteSettings));
 };
 
@@ -323,6 +355,7 @@ export const updateSiteSettings = async (data: Partial<SiteSettings>): Promise<S
 // --- Hero Slides ---
 export const getHeroSlides = async (): Promise<HeroSlide[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.heroSlides));
 };
 
@@ -356,6 +389,7 @@ export const deleteHeroSlide = async (id: string): Promise<boolean> => {
 // --- About ---
 export const getAboutContent = async (): Promise<AboutContent> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.about)); 
 };
 
@@ -369,11 +403,13 @@ export const updateAboutContent = async (data: AboutContent): Promise<AboutConte
 // --- Services ---
 export const getServices = async (): Promise<Service[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.services)); 
 };
 
 export const getServiceById = async (id: string): Promise<Service | undefined> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.services.find(s => s.id === id)));
 };
 
@@ -406,11 +442,13 @@ export const deleteService = async (id: string): Promise<boolean> => {
 // --- Facilities ---
 export const getFacilities = async (): Promise<Facility[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.facilities));
 };
 
 export const getFacilityById = async (id: string): Promise<Facility | undefined> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.facilities.find(f => f.id === id)));
 };
 
@@ -443,11 +481,13 @@ export const deleteFacility = async (id: string): Promise<boolean> => {
 // --- Departments ---
 export const getDepartments = async (): Promise<Department[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.departments));
 };
 
 export const getDepartmentById = async (id: string): Promise<Department | undefined> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.departments.find(d => d.id === id)));
 };
 
@@ -480,11 +520,13 @@ export const deleteDepartment = async (id: string): Promise<boolean> => {
 // --- Gallery ---
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage(); 
     return JSON.parse(JSON.stringify(mockDb.gallery));
 };
 
 export const getGalleryItemById = async (id: string): Promise<GalleryItem | undefined> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.gallery.find(g => g.id === id)));
 };
 
@@ -517,11 +559,13 @@ export const deleteGalleryItem = async (id: string): Promise<boolean> => {
 // --- News & Events ---
 export const getNewsEvents = async (): Promise<NewsEvent[]> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.newsEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())));
 };
 
 export const getNewsEventById = async (id: string): Promise<NewsEvent | undefined> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     // Match by ID or by link if ID is not found (for slug-based routing)
     const item = mockDb.newsEvents.find(n => n.id === id || n.link === `/news/${id}`);
     return JSON.parse(JSON.stringify(item));
@@ -571,6 +615,7 @@ export const deleteNewsEvent = async (id: string): Promise<boolean> => {
 // --- Contact Info ---
 export const getContactInfo = async (): Promise<ContactInfo> => {
     await delay(SIMULATED_DELAY);
+    reinitializeMockDbFromStorage();
     return JSON.parse(JSON.stringify(mockDb.contact));
 };
 
