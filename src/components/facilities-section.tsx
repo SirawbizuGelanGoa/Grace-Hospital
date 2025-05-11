@@ -89,13 +89,13 @@ const FacilitiesSection = () => {
                   </Card>
                 </DialogTrigger>
                 {selectedFacility && selectedFacility.id === facility.id && (
-                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-2xl text-primary">{selectedFacility.name}</DialogTitle>
                     </DialogHeader>
                     <div className="mt-4 space-y-4">
                       {selectedFacility.imageUrl && (
-                        <div className="relative h-64 w-full rounded-lg overflow-hidden border bg-muted">
+                        <div className="relative h-64 md:h-80 lg:h-96 w-full rounded-lg overflow-hidden border bg-muted">
                           <NextImage
                             src={selectedFacility.imageUrl}
                             alt={selectedFacility.name}

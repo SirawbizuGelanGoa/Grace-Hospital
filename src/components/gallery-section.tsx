@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -209,7 +210,7 @@ const GallerySection = () => {
       {/* Photo Lightbox Dialog */}
       {isLightboxOpen && photos.length > 0 && (
         <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-          <DialogContent className="max-w-3xl w-full p-0 border-0 bg-black/90 shadow-none overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0">
+          <DialogContent className="max-w-3xl md:max-w-4xl lg:max-w-5xl w-full p-0 border-0 bg-black/90 shadow-none overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0">
             <div className="relative aspect-[16/10] flex items-center justify-center">
               <Image
                 src={photos[currentPhotoIndex].src}
@@ -263,7 +264,7 @@ const GallerySection = () => {
       {/* Video Player Dialog */}
       {isVideoPlayerOpen && selectedVideo && (
          <Dialog open={isVideoPlayerOpen} onOpenChange={(open) => !open && closeVideoPlayer()}>
-            <DialogContent className="max-w-3xl w-full p-0 border-0 bg-black data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0">
+            <DialogContent className="max-w-3xl md:max-w-4xl lg:max-w-5xl w-full p-0 border-0 bg-black data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0">
              <DialogHeader className="absolute top-0 right-0 z-[60] p-2"> {/* For close button positioning */}
                  <DialogClose asChild>
                      <Button
