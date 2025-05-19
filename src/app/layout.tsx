@@ -3,6 +3,7 @@ import { Inter as FontSans, JetBrains_Mono as FontMono } from "next/font/google"
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
+import StickySocials from "@/components/sticky-socials"; // Import StickySocials
 
 const geistSans = FontSans({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning={true}>
+        <StickySocials />
         {children}
         <Toaster /> {/* Add Toaster component */}
       </body>

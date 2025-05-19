@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Hospital, Facebook, Send, Video } from 'lucide-react'; 
+import { Hospital } from 'lucide-react'; 
 import { getSiteSettings, SiteSettings } from '@/lib/mock-data';
 import { Skeleton } from './ui/skeleton'; 
 
@@ -51,41 +51,10 @@ const Footer = () => {
            <span className="opacity-50">|</span>
            <Link href="#contact" className="hover:text-accent transition-colors">Contact Us</Link>
         </div>
-
-        {/* Social Media Icons */}
-        <div className="flex justify-center space-x-6">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-6 w-6 rounded-full bg-primary-foreground/20" />
-              <Skeleton className="h-6 w-6 rounded-full bg-primary-foreground/20" />
-              <Skeleton className="h-6 w-6 rounded-full bg-primary-foreground/20" />
-            </>
-          ) : (
-            <>
-              {siteSettings?.facebookUrl && (
-                <a href={siteSettings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-accent transition-colors">
-                  <Facebook className="h-6 w-6" />
-                </a>
-              )}
-              {siteSettings?.tiktokUrl && (
-                <a href={siteSettings.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="hover:text-accent transition-colors">
-                  <Video className="h-6 w-6" /> {/* Using Video as a placeholder for TikTok */}
-                </a>
-              )}
-              {siteSettings?.telegramUrl && (
-                <a href={siteSettings.telegramUrl} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="hover:text-accent transition-colors">
-                  <Send className="h-6 w-6" />
-                </a>
-              )}
-            </>
-          )}
-        </div>
-
+        {/* Social Media Icons are now in StickySocials component */}
       </div>
     </footer>
   );
 };
 
 export default Footer;
-
-    
