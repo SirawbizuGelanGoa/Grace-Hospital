@@ -19,11 +19,15 @@ const Footer = () => {
     const fetchSettings = async () => {
       setIsLoading(true); // Set loading true before fetch
       try {
+        // Simulating a fetch, replace with actual Firebase fetch if migrating
+        // For now, assumes mock-data is still in place or provides fallback
         const settings = await getSiteSettings();
         setSiteSettings(settings);
       } catch (error) {
         console.error("Failed to fetch site settings for footer:", error);
-        setSiteSettings({ hospitalName: 'Grace Hospital', logoUrl: '' }); // Fallback
+        // Fallback using initial values from mock-data if it's still structured that way
+        // Or a hardcoded default if mock-data is completely removed
+        setSiteSettings({ hospitalName: 'Grace Hospital', logoUrl: '' }); 
       } finally {
         setIsLoading(false);
       }
@@ -40,10 +44,10 @@ const Footer = () => {
           <Hospital className="h-5 w-5" />
           {isLoading && !siteSettings ? <Skeleton className="h-6 w-32 bg-primary-foreground/20" /> : hospitalName}
         </div>
-        <p className="text-sm mb-4">
+        <div className="text-sm mb-4"> {/* Changed from p to div */}
           &copy; {currentYear === null ? <Skeleton className="inline-block h-4 w-10 bg-primary-foreground/20" /> : currentYear}{' '}
           {isLoading && !siteSettings ? <Skeleton className="inline-block h-4 w-24 bg-primary-foreground/20" /> : hospitalName}. All rights reserved.
-        </p>
+        </div>
         <div className="flex justify-center space-x-4 text-sm mb-6">
           <Link href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</Link>
           <span className="opacity-50">|</span>
