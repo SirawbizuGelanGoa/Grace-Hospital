@@ -1,0 +1,50 @@
+[debug] [2025-05-23T08:11:42.896Z] ----------------------------------------------------------------------
+[debug] [2025-05-23T08:11:42.900Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /nix/store/x1y0l2xj62jgmz6csprhhqzibvdggdpk-firebase-tools-14.3.1/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2025-05-23T08:11:42.902Z] CLI Version:   14.3.1
+[debug] [2025-05-23T08:11:42.902Z] Platform:      linux
+[debug] [2025-05-23T08:11:42.903Z] Node Version:  v20.19.0
+[debug] [2025-05-23T08:11:42.903Z] Time:          Fri May 23 2025 08:11:42 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-05-23T08:11:42.903Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-05-23T08:11:42.915Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-05-23T08:12:20.207Z] Running auto auth
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/studio
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2025-05-23T08:13:21.874Z] No OAuth tokens found
+[debug] [2025-05-23T08:13:21.880Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2025-05-23T08:13:22.554Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2025-05-23T08:13:22.563Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] i  Using project grace-hospital-24e52 (Grace hospital) 
+[info] 
+=== Hosting Setup
+[debug] [2025-05-23T08:13:28.659Z] No OAuth tokens found
+[debug] [2025-05-23T08:13:28.663Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/grace-hospital-24e52 [none]
+[debug] [2025-05-23T08:13:29.214Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/grace-hospital-24e52 200
+[debug] [2025-05-23T08:13:29.215Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/grace-hospital-24e52 {"projectId":"grace-hospital-24e52","projectNumber":"855083463704","displayName":"Grace hospital","name":"projects/grace-hospital-24e52","resources":{"hostingSite":"grace-hospital-24e52"},"state":"ACTIVE","etag":"1_5b0b93b2-2de7-458b-a090-3e3f82046838"}
+[debug] [2025-05-23T08:15:06.946Z] Error: Command failed: npx --yes create-next-app@"12 - 15.0" -e hello-world STUDIO --use-npm --ts
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at Object.init (/nix/store/x1y0l2xj62jgmz6csprhhqzibvdggdpk-firebase-tools-14.3.1/lib/node_modules/firebase-tools/lib/frameworks/next/index.js:216:34)
+    at async doSetup (/nix/store/x1y0l2xj62jgmz6csprhhqzibvdggdpk-firebase-tools-14.3.1/lib/node_modules/firebase-tools/lib/init/features/hosting/index.js:108:13)
+    at async init (/nix/store/x1y0l2xj62jgmz6csprhhqzibvdggdpk-firebase-tools-14.3.1/lib/node_modules/firebase-tools/lib/init/index.js:41:9)
+    at async Command.initAction [as actionFn] (/nix/store/x1y0l2xj62jgmz6csprhhqzibvdggdpk-firebase-tools-14.3.1/lib/node_modules/firebase-tools/lib/commands/init.js:187:5)
+[error] 
+[error] Error: An unexpected error has occurred.
