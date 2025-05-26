@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config(); // ✅ Make sure this line is called earlyimport mysql from 'mysql2/promise';
 import mysql from 'mysql2/promise';
-
 // Database connection pool
+console.log("DB user:", process.env.DB_USER);
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
