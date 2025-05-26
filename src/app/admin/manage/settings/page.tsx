@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,16 +10,17 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
-import { getSiteSettings, updateSiteSettings, SiteSettings } from '@/lib/mock-data';
+import { getSiteSettings, updateSiteSettings, SiteSettingsSQL } from '@/lib/mock-data'; // Ensure this uses mock-data
 import { Skeleton } from '@/components/ui/skeleton';
-import Image from 'next/image'; // For logo preview
-import { Facebook, Send, Video } from 'lucide-react'; // Social media icons
+import Image from 'next/image';
+import { Facebook, Send } from 'lucide-react';
+import { TikTokIcon } from '@/components/tiktok-icon';
 
-// Define Zod schema for validation
+// Define Zod schema for validation (matches SiteSettingsSQL)
 const siteSettingsSchema = z.object({
   hospitalName: z.string().min(3, "Hospital name must be at least 3 characters long"),
   logoUrl: z.string().optional().or(z.literal('')).refine(value => {
-    if (!value) return true; // Allow empty or undefined
+    if (!value) return true; 
     return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
   }, { message: "Must be a valid URL or an uploaded image." }),
   facebookUrl: z.string().url("Invalid Facebook URL").optional().or(z.literal('')),
@@ -28,13 +30,13 @@ const siteSettingsSchema = z.object({
 
 type SiteSettingsFormData = z.infer<typeof siteSettingsSchema>;
 
+
 export default function ManageSettingsPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | undefined>(undefined);
   const [logoFileName, setLogoFileName] = useState<string | undefined>(undefined);
-
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<SiteSettingsFormData>({
     resolver: zodResolver(siteSettingsSchema),
@@ -53,10 +55,28 @@ export default function ManageSettingsPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSettings();
-        reset(data);
-        setLogoPreview(data.logoUrl);
+        const data = await getSiteSettings(); // Uses mock-data
+        if (data) {
+          reset({
+            hospitalName: data.hospitalName,
+            logoUrl: data.logoUrl || '',
+            facebookUrl: data.facebookUrl || '',
+            tiktokUrl: data.tiktokUrl || '',
+            telegramUrl: data.telegramUrl || '',
+          });
+          setLogoPreview(data.logoUrl || undefined);
+        } else {
+            reset({ 
+                hospitalName: 'Grace Hospital', 
+                logoUrl: '',
+                facebookUrl: '',
+                tiktokUrl: '',
+                telegramUrl: '',
+            });
+            setLogoPreview(undefined);
+        }
       } catch (error) {
+        console.error('Failed to load site settings:', error);
         toast({
           title: "Error",
           description: "Failed to load site settings.",
@@ -86,29 +106,38 @@ export default function ManageSettingsPage() {
       reader.readAsDataURL(file);
     } else {
       setLogoFileName(undefined);
-      // Optionally clear 'logoUrl' if file is removed, or let user clear URL field
     }
   };
 
   const onSubmit: SubmitHandler<SiteSettingsFormData> = async (data) => {
     setIsSaving(true);
     try {
-      const dataToSave = {
-        ...data,
-        logoUrl: data.logoUrl || '', // Ensure empty string if undefined
-        facebookUrl: data.facebookUrl || '',
-        tiktokUrl: data.tiktokUrl || '',
-        telegramUrl: data.telegramUrl || '',
+      const dataToSave: SiteSettingsSQL = {
+          ...data,
+          id: 'ss_main', // Assuming a fixed ID for site settings
+          logoUrl: data.logoUrl || null,
+          facebookUrl: data.facebookUrl || null,
+          tiktokUrl: data.tiktokUrl || null,
+          telegramUrl: data.telegramUrl || null,
       };
-      const updatedSettings = await updateSiteSettings(dataToSave);
-      reset(updatedSettings); 
-      setLogoPreview(updatedSettings.logoUrl);
-      setLogoFileName(undefined); // Clear file name after successful save
+      const updatedSettings = await updateSiteSettings(dataToSave); // Uses mock-data
+      if (updatedSettings) {
+        reset({ 
+            hospitalName: updatedSettings.hospitalName,
+            logoUrl: updatedSettings.logoUrl || '',
+            facebookUrl: updatedSettings.facebookUrl || '',
+            tiktokUrl: updatedSettings.tiktokUrl || '',
+            telegramUrl: updatedSettings.telegramUrl || '',
+        });
+        setLogoPreview(updatedSettings.logoUrl || undefined);
+      }
+      setLogoFileName(undefined);
       toast({
         title: "Success",
         description: "Site settings updated successfully.",
       });
     } catch (error) {
+      console.error('Failed to save site settings:', error);
       toast({
         title: "Error",
         description: "Failed to save site settings. Please try again.",
@@ -127,33 +156,15 @@ export default function ManageSettingsPage() {
                 <Skeleton className="h-4 w-2/3 mt-2" />
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                 <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-1/5" />
-                    <Skeleton className="h-24 w-24" /> {/* Logo preview skeleton */}
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-24 w-24" /> 
                 </div>
             </CardContent>
             <CardFooter>
@@ -171,14 +182,12 @@ export default function ManageSettingsPage() {
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
-          {/* Hospital Name */}
           <div className="space-y-2">
             <Label htmlFor="hospitalName">Hospital Name</Label>
             <Input id="hospitalName" {...register("hospitalName")} disabled={isSaving} placeholder="Enter hospital name" />
             {errors.hospitalName && <p className="text-sm text-destructive">{errors.hospitalName.message}</p>}
           </div>
 
-          {/* Logo URL Input */}
           <div className="space-y-2">
             <Label htmlFor="logoUrlField">Logo Image URL (Optional)</Label>
             <Input 
@@ -189,13 +198,12 @@ export default function ManageSettingsPage() {
               onChange={(e) => {
                 setValue("logoUrl", e.target.value, {shouldValidate: true});
                 setLogoPreview(e.target.value);
-                setLogoFileName(undefined); // Clear file name if URL is typed
+                setLogoFileName(undefined); 
               }}
             />
             {errors.logoUrl && <p className="text-sm text-destructive">{errors.logoUrl.message}</p>}
           </div>
 
-           {/* Logo File Upload Input */}
            <div className="space-y-2">
             <Label htmlFor="logoUpload">Or Upload Logo</Label>
             <Input 
@@ -210,8 +218,6 @@ export default function ManageSettingsPage() {
             <p className="text-xs text-muted-foreground">Upload a logo image. URLs will take precedence if both are provided.</p>
           </div>
 
-
-          {/* Logo Preview */}
           {logoPreview && (
             <div className="space-y-2">
                 <Label>Logo Preview</Label>
@@ -235,14 +241,13 @@ export default function ManageSettingsPage() {
             </div>
            )}
 
-            {/* Social Media Links */}
             <div className="space-y-2">
                 <Label htmlFor="facebookUrl" className="flex items-center gap-2"><Facebook className="h-4 w-4 text-blue-600" /> Facebook URL</Label>
                 <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/yourpage" disabled={isSaving} />
                 {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
             </div>
             <div className="space-y-2">
-                <Label htmlFor="tiktokUrl" className="flex items-center gap-2"><Video className="h-4 w-4 text-black" /> TikTok URL</Label>
+                 <Label htmlFor="tiktokUrl" className="flex items-center gap-2"><TikTokIcon className="h-4 w-4 text-black" /> TikTok URL</Label>
                 <Input id="tiktokUrl" {...register("tiktokUrl")} placeholder="https://tiktok.com/@yourprofile" disabled={isSaving} />
                 {errors.tiktokUrl && <p className="text-sm text-destructive">{errors.tiktokUrl.message}</p>}
             </div>
@@ -251,8 +256,6 @@ export default function ManageSettingsPage() {
                 <Input id="telegramUrl" {...register("telegramUrl")} placeholder="https://t.me/yourchannel" disabled={isSaving} />
                 {errors.telegramUrl && <p className="text-sm text-destructive">{errors.telegramUrl.message}</p>}
             </div>
-
-
         </CardContent>
         <CardFooter>
           <Button type="submit" disabled={isSaving}>
