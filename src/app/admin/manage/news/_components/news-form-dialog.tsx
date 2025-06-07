@@ -27,7 +27,8 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { createNewsEvent, updateNewsEvent, NewsEvent } from '@/lib/mock-data';
-import NextImage from 'next/image'; // Using NextImage to avoid conflict if 'Image' is a Lucide icon
+import { Progress } from '@/components/ui/progress';
+import Image from 'next/image';
 
 // Define Zod schema for validation
 const newsSchema = z.object({
@@ -35,10 +36,16 @@ const newsSchema = z.object({
   date: z.date({ required_error: "Date is required." }),
   summary: z.string().min(10, "Summary must be at least 10 characters long").max(200, "Summary cannot exceed 200 characters"),
   fullContent: z.string().min(50, "Full content must be at least 50 characters long"),
-  image: z.string().min(1, "Image source is required.").refine(value => 
-    value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image'), 
-    { message: "Must be a valid URL or an uploaded image." }
-  ),
+  image: z.string().min(1, "Image source is required.").refine(value => {
+    // Valid if it's an absolute URL (http/https)
+    if (value.startsWith('http://') || value.startsWith('https://')) return true;
+    
+    // Valid if it's a relative path from our upload API
+    if (value.startsWith('/uploads/')) return true;
+    
+    // Otherwise invalid
+    return false;
+  }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
   link: z.string().min(1, "Link slug is required (e.g., /news/my-article)").refine(val => val.startsWith('/'), { message: "Link must start with /"}),
   hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
 });
@@ -58,6 +65,8 @@ interface NewsFormDialogProps {
 export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: NewsFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const isEditing = !!item;
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [fileName, setFileName] = useState<string | undefined>(undefined);
@@ -110,17 +119,65 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
     setImagePreview(watchedImage);
   }, [watchedImage]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file upload
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        setValue('image', dataUri, { shouldValidate: true });
-        setImagePreview(dataUri);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      setUploadProgress(0);
+      setImagePreview(undefined); // Clear previous preview
+      setValue('image', '', { shouldValidate: false }); // Clear URL field while uploading
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        // Use fetch to call the upload API route
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        // Simulate progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setUploadProgress(Math.min(progress, 90)); // Stop at 90 until fetch completes
+          if (progress >= 90) clearInterval(interval);
+        }, 100);
+
+        const result = await response.json();
+        clearInterval(interval);
+        setUploadProgress(100);
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Upload failed');
+        }
+
+        // Update the form with the returned URL
+        setValue('image', result.url, { shouldValidate: true });
+        setImagePreview(result.url);
+        setFileName(undefined);
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully.",
+        });
+
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        toast({
+          title: "Upload Error",
+          description: error.message || "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+        event.target.value = '';
+        setFileName(undefined);
+        setImagePreview(watchedImage || undefined);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     } else {
       setFileName(undefined);
     }
@@ -178,7 +235,7 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="space-y-1">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register("title")} disabled={isSaving} />
+            <Input id="title" {...register("title")} disabled={isSaving || isUploading} />
             {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
@@ -196,7 +253,7 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
                          "w-full justify-start text-left font-normal",
                          !field.value && "text-muted-foreground"
                        )}
-                       disabled={isSaving}
+                       disabled={isSaving || isUploading}
                      >
                        <CalendarIcon className="mr-2 h-4 w-4" />
                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
@@ -218,13 +275,13 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
 
           <div className="space-y-1">
             <Label htmlFor="summary">Summary (Short)</Label>
-            <Textarea id="summary" {...register("summary")} rows={3} disabled={isSaving} />
+            <Textarea id="summary" {...register("summary")} rows={3} disabled={isSaving || isUploading} />
             {errors.summary && <p className="text-sm text-destructive">{errors.summary.message}</p>}
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="fullContent">Full Content</Label>
-            <Textarea id="fullContent" {...register("fullContent")} rows={8} disabled={isSaving} placeholder="Enter the full content of the news or event..."/>
+            <Textarea id="fullContent" {...register("fullContent")} rows={8} disabled={isSaving || isUploading} placeholder="Enter the full content of the news or event..."/>
             {errors.fullContent && <p className="text-sm text-destructive">{errors.fullContent.message}</p>}
           </div>
 
@@ -233,15 +290,16 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
             <Input 
               id="image" 
               {...register("image")} 
-              placeholder="https://picsum.photos/400/250 or leave blank to upload" 
-              disabled={isSaving}
+              placeholder="https://example.com/image.jpg or upload below" 
+              disabled={isSaving || isUploading}
               onChange={(e) => {
                 setValue("image", e.target.value, { shouldValidate: true });
-                setImagePreview(e.target.value);
+                setImagePreview(e.target.value || undefined);
                 setFileName(undefined);
               }}
             />
             {errors.image && <p className="text-sm text-destructive">{errors.image.message}</p>}
+            <p className="text-xs text-muted-foreground">Enter a full URL (https://...) or use the upload option below.</p>
           </div>
 
           <div className="space-y-1">
@@ -251,22 +309,32 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
               type="file" 
               accept="image/*" 
               onChange={handleFileChange} 
-              disabled={isSaving}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+              disabled={isSaving || isUploading}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
             />
-            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+            {fileName && !isUploading && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+            {isUploading && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Uploading: {fileName}...</p>
+                <Progress value={uploadProgress} className="w-full h-2" />
+              </div>
+            )}
           </div>
 
           {imagePreview && (
             <div className="space-y-1">
               <Label>Image Preview</Label>
                <div className="relative h-32 w-full max-w-xs rounded border overflow-hidden bg-muted">
-                 <NextImage
+                 <Image
                    src={imagePreview}
                    alt="News image preview"
-                   layout="fill"
-                   objectFit="cover"
+                   fill={true}
+                   style={{ objectFit: 'cover' }}
                    unoptimized
+                   onError={() => {
+                     console.warn(`Failed to load image preview: ${imagePreview}`);
+                     setImagePreview(undefined);
+                   }}
                  />
                </div>
             </div>
@@ -274,24 +342,24 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
 
           <div className="space-y-1">
             <Label htmlFor="link">Link Slug (Unique)</Label>
-            <Input id="link" {...register("link")} placeholder="/news/your-unique-article-slug" disabled={isSaving} />
+            <Input id="link" {...register("link")} placeholder="/news/your-unique-article-slug" disabled={isSaving || isUploading} />
              <p className="text-xs text-muted-foreground">Unique part of the URL after domain (must start with '/'). E.g., /news/health-camp-2024</p>
             {errors.link && <p className="text-sm text-destructive">{errors.link.message}</p>}
           </div>
 
            <div className="space-y-1">
             <Label htmlFor="hint">AI Hint (Optional)</Label>
-            <Input id="hint" {...register("hint")} placeholder="e.g., health camp" disabled={isSaving} />
+            <Input id="hint" {...register("hint")} placeholder="e.g., health camp" disabled={isSaving || isUploading} />
              <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
             {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
           </div>
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving || isUploading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Item')}
+            <Button type="submit" disabled={isSaving || isUploading}>
+              {isSaving ? 'Saving...' : (isUploading ? 'Uploading...' : (isEditing ? 'Save Changes' : 'Create Item'))}
             </Button>
           </DialogFooter>
         </form>
@@ -299,3 +367,4 @@ export default function NewsFormDialog({ isOpen, setIsOpen, item, onSuccess }: N
     </Dialog>
   );
 }
+

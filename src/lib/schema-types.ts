@@ -12,8 +12,9 @@ export type SiteSettingsSQL = {
   created_at?: string; 
 };
 
-export type HeroSlideSQL = {
-  id: string;
+// Hero Slides
+export interface HeroSlideSQL {
+  id: number; // Changed from string to number to match MySQL auto-increment
   src: string;
   alt: string;
   hint?: string | null;
@@ -21,9 +22,9 @@ export type HeroSlideSQL = {
   subtitle?: string | null;
   ctaLink?: string | null;
   ctaText?: string | null;
-  position?: number | null;
+  position: number;
   created_at?: string;
-};
+}
 
 export type AboutContentSQL = {
   id: string; 

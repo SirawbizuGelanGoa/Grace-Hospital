@@ -1,59 +1,44 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import * as LucideIcons from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { createFacility, updateFacility, Facility } from '@/lib/mock-data';
-import DynamicIcon from '@/lib/icons';
-import NextImage from 'next/image'; // Renamed to avoid conflict
-
-// Generate list of valid Lucide icon names
-const availableIconNames = Object.keys(LucideIcons)
-  .filter(key => {
-    const value = LucideIcons[key as keyof typeof LucideIcons];
-    return typeof value === 'function' &&
-           key[0] === key[0].toUpperCase() && 
-           key !== 'LucideIcon';
-  })
-  .sort();
+import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
+import { Progress } from '@/components/ui/progress'; // Import Progress component
 
 // Define Zod schema for validation
 const facilitySchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters long"),
-  description: z.string().min(10, "Short description must be at least 10 characters long").max(150, "Short description max 150 chars"),
-  detailedDescription: z.string().min(20, "Detailed description must be at least 20 characters long"),
-  iconName: z.string().refine(val => availableIconNames.includes(val), {
-       message: "Please select a valid icon",
-   }),
-  imageUrl: z.string().optional().or(z.literal('')).refine(value => {
-    if (!value) return true; 
-    return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
-  }, { message: "Must be a valid URL or an uploaded image." }),
-  imageHint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
+  name: z.string().min(3, "Facility name must be at least 3 characters long"),
+  description: z.string().min(10, "Description must be at least 10 characters long"),
+  imageUrl: z.string().optional().or(z.literal(''))
+    .refine(value => {
+      // Empty string is valid (optional image)
+      if (!value) return true;
+      
+      // Valid if it's an absolute URL (http/https)
+      if (value.startsWith('http://') || value.startsWith('https://')) return true;
+      
+      // Valid if it's a relative path from our upload API
+      if (value.startsWith('/uploads/')) return true;
+      
+      // Otherwise invalid
+      return false;
+    }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
+  hint: z.string().optional().or(z.literal('')),
 });
 
 type FacilityFormData = z.infer<typeof facilitySchema>;
@@ -61,51 +46,49 @@ type FacilityFormData = z.infer<typeof facilitySchema>;
 interface FacilityFormDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  facility: Facility | null; 
+  facility: Facility | null;
   onSuccess: (facility: Facility) => void;
 }
 
 export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSuccess }: FacilityFormDialogProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const isEditing = !!facility;
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [fileName, setFileName] = useState<string | undefined>(undefined);
 
-  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<FacilityFormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FacilityFormData>({
     resolver: zodResolver(facilitySchema),
-     defaultValues: {
+    defaultValues: {
       name: '',
       description: '',
-      detailedDescription: '',
-      iconName: 'HelpCircle',
       imageUrl: '',
-      imageHint: '',
-    }
+      hint: '',
+    },
   });
 
-   const watchedImageUrl = watch('imageUrl');
+  const watchedImageUrl = watch('imageUrl');
 
+  // Reset form when dialog opens/closes or facility changes
   useEffect(() => {
     if (isOpen) {
       if (facility) {
+        // Edit mode - populate form with facility data
         reset({
-            name: facility.name,
-            description: facility.description,
-            detailedDescription: facility.detailedDescription,
-            iconName: availableIconNames.includes(facility.iconName) ? facility.iconName : 'HelpCircle',
-            imageUrl: facility.imageUrl || '',
-            imageHint: facility.imageHint || '',
+          name: facility.name || '',
+          description: facility.description || '',
+          imageUrl: facility.imageUrl || '',
+          hint: facility.hint || '',
         });
-        setImagePreview(facility.imageUrl);
+        setImagePreview(facility.imageUrl || undefined);
       } else {
-        reset({ 
-            name: '',
-            description: '',
-            detailedDescription: '',
-            iconName: 'HelpCircle',
-            imageUrl: '',
-            imageHint: '',
+        // Add mode - reset to defaults
+        reset({
+          name: '',
+          description: '',
+          imageUrl: '',
+          hint: '',
         });
         setImagePreview(undefined);
       }
@@ -113,21 +96,70 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
     }
   }, [isOpen, facility, reset]);
 
+  // Update preview when imageUrl changes
   useEffect(() => {
-    setImagePreview(watchedImageUrl);
+    setImagePreview(watchedImageUrl || undefined);
   }, [watchedImageUrl]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file upload
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        setValue('imageUrl', dataUri, { shouldValidate: true });
-        setImagePreview(dataUri);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      setUploadProgress(0);
+      setImagePreview(undefined); // Clear previous preview
+      setValue('imageUrl', '', { shouldValidate: false }); // Clear URL field while uploading
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        // Use fetch to call the upload API route
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        // Simulate progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setUploadProgress(Math.min(progress, 90)); // Stop at 90 until fetch completes
+          if (progress >= 90) clearInterval(interval);
+        }, 100);
+
+        const result = await response.json();
+        clearInterval(interval);
+        setUploadProgress(100);
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Upload failed');
+        }
+
+        // Update the form with the returned URL
+        setValue('imageUrl', result.url, { shouldValidate: true });
+        setImagePreview(result.url);
+        setFileName(undefined);
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully.",
+        });
+
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        toast({
+          title: "Upload Error",
+          description: error.message || "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+        event.target.value = '';
+        setFileName(undefined);
+        setImagePreview(watchedImageUrl || undefined);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     } else {
       setFileName(undefined);
     }
@@ -136,27 +168,30 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
   const onSubmit: SubmitHandler<FacilityFormData> = async (data) => {
     setIsSaving(true);
     try {
-       let savedFacility: Facility | null;
-       const dataToSave = { 
-           ...data, 
-           imageUrl: data.imageUrl || '',
-           imageHint: data.imageHint || '',
-        };
-
-       if (isEditing && facility) {
-        savedFacility = await updateFacility(facility.id, dataToSave);
-        if (!savedFacility) throw new Error("Update failed");
-        toast({ title: "Success", description: "Facility updated successfully." });
+      let savedFacility: Facility;
+      
+      if (facility) {
+        // Update existing facility
+        savedFacility = await updateFacility({
+          ...data,
+          id: facility.id,
+        });
       } else {
-        savedFacility = await createFacility(dataToSave);
-        toast({ title: "Success", description: "Facility created successfully." });
+        // Create new facility
+        savedFacility = await createFacility(data);
       }
+      
       onSuccess(savedFacility);
-      setFileName(undefined);
-    } catch (error) {
+      toast({
+        title: "Success",
+        description: `Facility ${facility ? 'updated' : 'created'} successfully.`,
+      });
+      
+    } catch (error: any) {
+      console.error("Save error:", error);
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'create'} facility. Please try again.`,
+        description: error.message || `Failed to ${facility ? 'update' : 'create'} facility. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -164,145 +199,124 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
     }
   };
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-        reset();
-        setImagePreview(undefined);
-        setFileName(undefined);
-    }
-    setIsOpen(open);
-  };
-
-
   return (
-     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Facility' : 'Add New Facility'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Update the details of the facility.' : 'Enter the details for the new facility.'}
-          </DialogDescription>
+          <DialogTitle>{facility ? 'Edit' : 'Add'} Facility</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 pr-2">
-           {/* Facility Name */}
-          <div className="space-y-1">
-            <Label htmlFor="name">Facility Name</Label>
-            <Input id="name" {...register("name")} disabled={isSaving} />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-          </div>
-
-          {/* Short Description */}
-          <div className="space-y-1">
-            <Label htmlFor="description">Short Description (for card)</Label>
-            <Textarea id="description" {...register("description")} rows={3} disabled={isSaving} />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
-          </div>
-
-           {/* Detailed Description */}
-           <div className="space-y-1">
-            <Label htmlFor="detailedDescription">Detailed Description (for modal)</Label>
-            <Textarea id="detailedDescription" {...register("detailedDescription")} rows={5} disabled={isSaving} />
-            {errors.detailedDescription && <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>}
-          </div>
-
-          {/* Icon Selector */}
-           <div className="space-y-1">
-             <Label htmlFor="iconName">Icon</Label>
-              <Controller
-                name="iconName"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                     onValueChange={field.onChange}
-                     value={field.value}
-                     disabled={isSaving}
-                  >
-                    <SelectTrigger id="iconName" className="w-full">
-                      <div className="flex items-center gap-2">
-                        <DynamicIcon name={field.value || 'HelpCircle'} className="h-5 w-5" />
-                        <SelectValue placeholder="Select an icon" />
-                       </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                       <ScrollArea className="h-[200px]">
-                        {availableIconNames.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                             <div className="flex items-center gap-2">
-                               <DynamicIcon name={icon} className="h-5 w-5" />
-                               <span>{icon}</span>
-                             </div>
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
-                )}
-             />
-              {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
-           </div>
-
-           {/* Image URL Input */}
-          <div className="space-y-1">
-            <Label htmlFor="imageUrl">Image URL (Optional)</Label>
-            <Input 
-              id="imageUrl" 
-              {...register("imageUrl")} 
-              placeholder="https://example.com/image.jpg or leave blank to upload" 
-              disabled={isSaving} 
-              onChange={(e) => {
-                setValue("imageUrl", e.target.value, {shouldValidate: true});
-                setImagePreview(e.target.value);
-                setFileName(undefined); // Clear file name if URL is typed
-              }}
-            />
-            {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
-          </div>
-          
-          {/* File Upload Input */}
-          <div className="space-y-1">
-            <Label htmlFor="imageUpload">Or Upload Image</Label>
-            <Input 
-              id="imageUpload" 
-              type="file" 
-              accept="image/*" 
-              onChange={handleFileChange} 
-              disabled={isSaving} 
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-            />
-            {fileName && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
-          </div>
-
-           {/* Image Preview */}
-          {imagePreview && (
-            <div className="space-y-1">
-                <Label>Image Preview</Label>
-                <div className="relative h-32 w-full max-w-xs rounded border overflow-hidden bg-muted">
-                    <NextImage
-                     src={imagePreview}
-                     alt="Facility image preview"
-                     layout="fill"
-                     objectFit="cover"
-                     unoptimized 
-                    />
-                </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid gap-4 py-4">
+            {/* Facility Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="name">Facility Name</Label>
+              <Input 
+                id="name" 
+                {...register("name")} 
+                placeholder="e.g., MRI Scanner" 
+                disabled={isSaving || isUploading}
+              />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
-          )}
 
-           {/* Image AI Hint */}
-           <div className="space-y-1">
-            <Label htmlFor="imageHint">Image AI Hint (Optional)</Label>
-            <Input id="imageHint" {...register("imageHint")} placeholder="e.g., modern lab" disabled={isSaving} />
-            <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
-            {errors.imageHint && <p className="text-sm text-destructive">{errors.imageHint.message}</p>}
+            {/* Description */}
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description" 
+                {...register("description")} 
+                placeholder="Describe the facility..." 
+                rows={3}
+                disabled={isSaving || isUploading}
+              />
+              {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            </div>
+
+            {/* Image URL */}
+            <div className="grid gap-2">
+              <Label htmlFor="imageUrl">Image URL (Optional)</Label>
+              <Input 
+                id="imageUrl" 
+                {...register("imageUrl")} 
+                placeholder="https://example.com/image.jpg or upload below" 
+                disabled={isSaving || isUploading}
+                onChange={(e) => {
+                  setValue("imageUrl", e.target.value, {shouldValidate: true});
+                  setImagePreview(e.target.value || undefined);
+                  setFileName(undefined);
+                }}
+              />
+              {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
+              <p className="text-xs text-muted-foreground">Enter a full URL (https://...) or use the upload option below.</p>
+            </div>
+
+            {/* File Upload */}
+            <div className="grid gap-2">
+              <Label htmlFor="imageUpload">Or Upload Image</Label>
+              <Input 
+                id="imageUpload" 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                disabled={isSaving || isUploading} 
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
+              />
+              {fileName && !isUploading && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
+              {isUploading && (
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Uploading: {fileName}...</p>
+                  <Progress value={uploadProgress} className="w-full h-2" />
+                </div>
+              )}
+            </div>
+
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="grid gap-2">
+                <Label>Image Preview</Label>
+                <div className="relative h-40 w-full rounded border overflow-hidden bg-muted">
+                  <Image
+                    src={imagePreview}
+                    alt="Facility image preview"
+                    fill={true}
+                    style={{ objectFit: 'cover' }}
+                    unoptimized
+                    onError={() => {
+                      console.warn(`Failed to load image preview: ${imagePreview}`);
+                      setImagePreview(undefined);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* AI Hint */}
+            <div className="grid gap-2">
+              <Label htmlFor="hint">Image AI Hint (Optional)</Label>
+              <Input 
+                id="hint" 
+                {...register("hint")} 
+                placeholder="e.g., MRI machine" 
+                disabled={isSaving || isUploading}
+              />
+              <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
+              {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
+            </div>
           </div>
-
-
-          <DialogFooter className="pt-2">
-             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
-                 Cancel
-             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Facility')}
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsOpen(false)} 
+              disabled={isSaving || isUploading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSaving || isUploading}
+            >
+              {isSaving ? 'Saving...' : (isUploading ? 'Uploading...' : 'Save')}
             </Button>
           </DialogFooter>
         </form>
@@ -310,3 +324,4 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
     </Dialog>
   );
 }
+

@@ -132,9 +132,12 @@ export default function ManageGalleryPage() {
                   <Image
                     src={item.src} // Use actual src for preview
                     alt={item.alt || 'Gallery thumbnail'}
-                    layout="fill"
-                    objectFit="cover"
+                    fill={true} // Use fill instead of layout="fill"
+                    style={{ objectFit: 'cover' }} // Use style for objectFit
                     unoptimized // Good for potentially external URLs
+                    onError={() => {
+                      console.warn(`Failed to load image: ${item.src}`);
+                    }}
                   />
                    {item.type === 'video' && (
                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -226,3 +229,4 @@ export default function ManageGalleryPage() {
     </Card>
   );
 }
+

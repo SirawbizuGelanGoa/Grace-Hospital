@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, UserRound } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
 import { getDepartments, deleteDepartment, Department } from '@/lib/mock-data';
-import DynamicIcon from '@/lib/icons';
+import Image from 'next/image'; // Import for image previews
 import DepartmentFormDialog from './_components/department-form-dialog'; // Import the form dialog
 
 export default function ManageDepartmentsPage() {
@@ -72,7 +72,7 @@ export default function ManageDepartmentsPage() {
     try {
       const success = await deleteDepartment(id);
       if (success) {
-        setDepartments(prev => prev.filter(d => d.id !== id));
+        setDepartments(prev => prev.filter(department => department.id !== id));
         toast({
           title: "Success",
           description: "Department deleted successfully.",
@@ -93,7 +93,7 @@ export default function ManageDepartmentsPage() {
 
    const handleFormSuccess = (savedDepartment: Department) => {
      if (selectedDepartment) {
-       setDepartments(prev => prev.map(d => d.id === savedDepartment.id ? savedDepartment : d));
+       setDepartments(prev => prev.map(department => department.id === savedDepartment.id ? savedDepartment : department));
      } else {
        setDepartments(prev => [savedDepartment, ...prev]);
      }
@@ -106,9 +106,11 @@ export default function ManageDepartmentsPage() {
         {isLoading ? (
           Array.from({ length: 3 }).map((_, index) => (
             <TableRow key={`skeleton-${index}`}>
-              <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-10 w-16 rounded" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-40" /></TableCell>
               <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
               <TableCell className="text-right space-x-2">
                 <Skeleton className="h-8 w-8 inline-block" />
                 <Skeleton className="h-8 w-8 inline-block" />
@@ -117,19 +119,45 @@ export default function ManageDepartmentsPage() {
           ))
         ) : departments.length === 0 ? (
             <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No departments found. Add one to get started!
                 </TableCell>
             </TableRow>
         ) : (
           departments.map((department) => (
             <TableRow key={department.id}>
-              <TableCell>
-                <DynamicIcon name={department.iconName || 'HelpCircle'} className="h-6 w-6 text-muted-foreground" />
+              <TableCell className="w-[80px]">
+                {department.imageUrl ? (
+                  <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
+                    <Image
+                      src={department.imageUrl}
+                      alt={department.name || 'Department thumbnail'}
+                      fill={true} // Use fill instead of layout="fill"
+                      style={{ objectFit: 'cover' }} // Use style for objectFit
+                      unoptimized
+                      onError={() => {
+                        console.warn(`Failed to load image: ${department.imageUrl}`);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10 w-16 rounded border bg-muted flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">No image</span>
+                  </div>
+                )}
               </TableCell>
-              <TableCell className="font-medium">{department.name}</TableCell>
-              <TableCell className="text-muted-foreground">{department.description}</TableCell>
-              <TableCell className="text-right space-x-2">
+              <TableCell className="font-medium w-[200px] truncate">{department.name}</TableCell>
+              <TableCell className="text-muted-foreground text-xs truncate max-w-[300px]">{department.description}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">
+                {department.headDoctor ? (
+                  <div className="flex items-center">
+                    <UserRound className="h-3 w-3 mr-1" />
+                    {department.headDoctor}
+                  </div>
+                ) : 'N/A'}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-xs">{department.hint || 'N/A'}</TableCell>
+              <TableCell className="text-right space-x-2 w-[120px]">
                  <Button variant="outline" size="icon" onClick={() => handleEdit(department)} aria-label={`Edit ${department.name}`}>
                    <Edit className="h-4 w-4" />
                  </Button>
@@ -173,7 +201,7 @@ export default function ManageDepartmentsPage() {
         <div className="flex justify-between items-center">
            <div>
              <CardTitle>Manage Departments</CardTitle>
-             <CardDescription>Add, edit, or delete hospital departments.</CardDescription>
+             <CardDescription>Add, edit, or delete hospital departments and their details.</CardDescription>
            </div>
           <Button onClick={handleAddNew}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Department
@@ -184,10 +212,12 @@ export default function ManageDepartmentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">Icon</TableHead>
-              <TableHead className="w-[200px]">Name</TableHead>
+              <TableHead>Image</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="text-right w-[120px]">Actions</TableHead>
+              <TableHead>Head Doctor</TableHead>
+              <TableHead>AI Hint</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
            {MemoizedTableBody}
@@ -203,3 +233,4 @@ export default function ManageDepartmentsPage() {
     </Card>
   );
 }
+

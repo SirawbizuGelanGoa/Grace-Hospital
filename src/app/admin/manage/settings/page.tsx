@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,14 +14,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Facebook, Send } from 'lucide-react';
 import { TikTokIcon } from '@/components/tiktok-icon';
+import { Progress } from '@/components/ui/progress'; // Import Progress component
 
 // Define Zod schema for validation (matches SiteSettingsSQL)
 const siteSettingsSchema = z.object({
   hospitalName: z.string().min(3, "Hospital name must be at least 3 characters long"),
-  logoUrl: z.string().optional().or(z.literal('')).refine(value => {
-    if (!value) return true; 
-    return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image');
-  }, { message: "Must be a valid URL or an uploaded image." }),
+  logoUrl: z.string().optional().or(z.literal(''))
+    .refine(value => {
+      // Empty string is valid (optional image)
+      if (!value) return true;
+      
+      // Valid if it's an absolute URL (http/https)
+      if (value.startsWith('http://') || value.startsWith('https://')) return true;
+      
+      // Valid if it's a relative path from our upload API
+      if (value.startsWith('/uploads/')) return true;
+      
+      // Otherwise invalid
+      return false;
+    }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
   facebookUrl: z.string().url("Invalid Facebook URL").optional().or(z.literal('')),
   tiktokUrl: z.string().url("Invalid TikTok URL").optional().or(z.literal('')),
   telegramUrl: z.string().url("Invalid Telegram URL").optional().or(z.literal('')),
@@ -35,6 +45,8 @@ export default function ManageSettingsPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // State for upload status
+  const [uploadProgress, setUploadProgress] = useState(0); // State for upload progress
   const [logoPreview, setLogoPreview] = useState<string | undefined>(undefined);
   const [logoFileName, setLogoFileName] = useState<string | undefined>(undefined);
 
@@ -90,24 +102,76 @@ export default function ManageSettingsPage() {
   }, [reset, toast]);
 
   useEffect(() => {
-    setLogoPreview(watchedLogoUrl);
+    setLogoPreview(watchedLogoUrl || undefined);
   }, [watchedLogoUrl]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // --- UPDATED: Handle File Upload --- 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setLogoFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        setValue('logoUrl', dataUri, { shouldValidate: true });
-        setLogoPreview(dataUri);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      setUploadProgress(0);
+      setLogoPreview(undefined); // Clear previous preview
+      setValue('logoUrl', '', { shouldValidate: false }); // Clear URL field while uploading
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        // Use fetch to call the upload API route
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          // Note: Don't set Content-Type header, browser does it for FormData
+        });
+
+        // Simulate progress (replace with actual progress if backend supports it)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            setUploadProgress(Math.min(progress, 90)); // Stop at 90 until fetch completes
+            if (progress >= 90) clearInterval(interval);
+        }, 100);
+
+        const result = await response.json();
+        clearInterval(interval); // Clear simulation interval
+        setUploadProgress(100); // Set progress to 100
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Upload failed');
+        }
+
+        // Update the form with the returned URL
+        setValue('logoUrl', result.url, { shouldValidate: true });
+        setLogoPreview(result.url);
+        setLogoFileName(undefined); // Clear file name display after successful upload
+        toast({
+          title: "Success",
+          description: "Logo uploaded successfully.",
+        });
+
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        toast({
+          title: "Upload Error",
+          description: error.message || "Failed to upload logo. Please try again.",
+          variant: "destructive",
+        });
+        // Clear file input and related state on error
+        event.target.value = ''; // Reset file input
+        setLogoFileName(undefined);
+        setLogoPreview(watchedLogoUrl || undefined); // Restore preview to previous URL if any
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     } else {
+      // If file selection is cancelled or cleared
       setLogoFileName(undefined);
     }
   };
+  // --- End of Update ---
 
   const onSubmit: SubmitHandler<SiteSettingsFormData> = async (data) => {
     setIsSaving(true);
@@ -184,7 +248,7 @@ export default function ManageSettingsPage() {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="hospitalName">Hospital Name</Label>
-            <Input id="hospitalName" {...register("hospitalName")} disabled={isSaving} placeholder="Enter hospital name" />
+            <Input id="hospitalName" {...register("hospitalName")} disabled={isSaving || isUploading} placeholder="Enter hospital name" />
             {errors.hospitalName && <p className="text-sm text-destructive">{errors.hospitalName.message}</p>}
           </div>
 
@@ -193,29 +257,36 @@ export default function ManageSettingsPage() {
             <Input 
               id="logoUrlField" 
               {...register("logoUrl")} 
-              placeholder="https://example.com/logo.png or leave blank to upload" 
-              disabled={isSaving} 
+              placeholder="https://example.com/logo.png or upload below" 
+              disabled={isSaving || isUploading} 
               onChange={(e) => {
                 setValue("logoUrl", e.target.value, {shouldValidate: true});
-                setLogoPreview(e.target.value);
+                setLogoPreview(e.target.value || undefined);
                 setLogoFileName(undefined); 
               }}
             />
             {errors.logoUrl && <p className="text-sm text-destructive">{errors.logoUrl.message}</p>}
+            <p className="text-xs text-muted-foreground">Enter a full URL (https://...) or use the upload option below.</p>
           </div>
 
-           <div className="space-y-2">
+          {/* File Upload Input */}
+          <div className="space-y-2">
             <Label htmlFor="logoUpload">Or Upload Logo</Label>
             <Input 
               id="logoUpload" 
               type="file" 
               accept="image/*" 
               onChange={handleFileChange} 
-              disabled={isSaving} 
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+              disabled={isSaving || isUploading} 
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
             />
-            {logoFileName && <p className="text-sm text-muted-foreground">Selected file: {logoFileName}</p>}
-            <p className="text-xs text-muted-foreground">Upload a logo image. URLs will take precedence if both are provided.</p>
+            {logoFileName && !isUploading && <p className="text-sm text-muted-foreground">Selected file: {logoFileName}</p>}
+            {isUploading && (
+                <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Uploading: {logoFileName}...</p>
+                    <Progress value={uploadProgress} className="w-full h-2" />
+                </div>
+            )}
           </div>
 
           {logoPreview && (
@@ -225,9 +296,14 @@ export default function ManageSettingsPage() {
                     <Image
                      src={logoPreview}
                      alt="Logo preview"
-                     layout="fill"
-                     objectFit="contain"
+                     fill={true} // Use fill instead of layout="fill"
+                     style={{ objectFit: 'contain' }} // Use style for objectFit
                      unoptimized 
+                     onError={() => {
+                         // Handle broken image links
+                         console.warn(`Failed to load image preview: ${logoPreview}`);
+                         setLogoPreview(undefined); // Clear preview on error
+                     }}
                     />
                 </div>
             </div>
@@ -243,26 +319,27 @@ export default function ManageSettingsPage() {
 
             <div className="space-y-2">
                 <Label htmlFor="facebookUrl" className="flex items-center gap-2"><Facebook className="h-4 w-4 text-blue-600" /> Facebook URL</Label>
-                <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/yourpage" disabled={isSaving} />
+                <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/yourpage" disabled={isSaving || isUploading} />
                 {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
             </div>
             <div className="space-y-2">
                  <Label htmlFor="tiktokUrl" className="flex items-center gap-2"><TikTokIcon className="h-4 w-4 text-black" /> TikTok URL</Label>
-                <Input id="tiktokUrl" {...register("tiktokUrl")} placeholder="https://tiktok.com/@yourprofile" disabled={isSaving} />
+                <Input id="tiktokUrl" {...register("tiktokUrl")} placeholder="https://tiktok.com/@yourprofile" disabled={isSaving || isUploading} />
                 {errors.tiktokUrl && <p className="text-sm text-destructive">{errors.tiktokUrl.message}</p>}
             </div>
             <div className="space-y-2">
                 <Label htmlFor="telegramUrl" className="flex items-center gap-2"><Send className="h-4 w-4 text-sky-500" /> Telegram URL</Label>
-                <Input id="telegramUrl" {...register("telegramUrl")} placeholder="https://t.me/yourchannel" disabled={isSaving} />
+                <Input id="telegramUrl" {...register("telegramUrl")} placeholder="https://t.me/yourchannel" disabled={isSaving || isUploading} />
                 {errors.telegramUrl && <p className="text-sm text-destructive">{errors.telegramUrl.message}</p>}
             </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Settings'}
+          <Button type="submit" disabled={isSaving || isUploading}>
+            {isSaving ? 'Saving...' : (isUploading ? 'Uploading...' : 'Save Settings')}
           </Button>
         </CardFooter>
       </form>
     </Card>
   );
 }
+

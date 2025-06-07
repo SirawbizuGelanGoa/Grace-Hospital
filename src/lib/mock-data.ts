@@ -1,4 +1,3 @@
-
 // This file now acts as an API client layer, fetching data from Next.js API routes
 // which in turn interact with the MySQL database.
 
@@ -37,8 +36,45 @@ export type GalleryItem = GalleryItemSQL;
 export type NewsEvent = NewsEventSQL;
 export type ContactInfo = ContactInfoSQL;
 
+// Admin authentication
+export interface AdminCredentials {
+    username: string;
+    password: string;
+}
+
+// Custom logger to avoid Next.js console.error issues
+const logger = {
+    error: (message: string, ...args: any[]) => {
+        // In development, still log to console but use console.warn instead of console.error
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn(`[ERROR] ${message}`, ...args);
+        }
+        // In production, you could implement a more sophisticated logging solution
+        // or simply suppress the errors that are expected
+    },
+    warn: (message: string, ...args: any[]) => {
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn(`[WARN] ${message}`, ...args);
+        }
+    },
+    info: (message: string, ...args: any[]) => {
+        if (process.env.NODE_ENV !== 'production') {
+            console.info(`[INFO] ${message}`, ...args);
+        }
+    }
+};
 
 // --- Helper for API calls ---
+// Define a custom error type to distinguish API errors
+class ApiError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
 async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
     const defaultOptions: RequestInit = {
         headers: {
@@ -51,44 +87,46 @@ async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
     let absoluteUrl = url;
     if (typeof window === 'undefined' && url.startsWith('/')) {
         // Server-side fetch, construct absolute URL
-        // Ensure NEXT_PUBLIC_APP_URL is set in .env.local for production/staging
-        // It should be the full URL of your deployed application (e.g., https://yourdomain.com)
-        // For local development, it defaults to http://localhost:9002 (from package.json dev script)
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         absoluteUrl = `${baseUrl}${url}`;
-        // console.log(`[API Fetch Server] Fetching absolute URL: ${absoluteUrl}`);
     } else if (typeof window !== 'undefined' && url.startsWith('/')) {
         // Client-side fetch, relative URL is fine
-        // console.log(`[API Fetch Client] Fetching relative URL: ${url}`);
     }
-
 
     try {
         const response = await fetch(absoluteUrl, mergedOptions);
         if (!response.ok) {
-            const errorBody = await response.text(); // Read as text first
+            const errorBody = await response.text();
             let errorData;
             try {
                 errorData = JSON.parse(errorBody);
             } catch (e) {
                 errorData = { message: errorBody || response.statusText };
             }
-            console.error(`API Error (${response.status}) for ${absoluteUrl}:`, errorData.message || errorData);
-            throw new Error(errorData.message || `API request failed with status ${response.status}`);
+            const errorMessage = errorData.message || `API request failed with status ${response.status}`;
+            // Use custom logger instead of console.error
+            logger.error(`API Error (${response.status}) for ${absoluteUrl}: ${errorMessage}`);
+            // Throw a custom error with the status code
+            throw new ApiError(errorMessage, response.status);
         }
         if (response.status === 204) { // No Content
              return undefined as T;
         }
         return response.json() as Promise<T>;
     } catch (error: any) {
-        console.error(`Network or parsing error for ${absoluteUrl}:`, error.message, error.stack);
+        // If it's not an ApiError we already threw, log it as a network/parsing error
+        if (!(error instanceof ApiError)) {
+            // Use custom logger instead of console.error
+            logger.error(`Network or parsing error for ${absoluteUrl}: ${error.message}`);
+        }
+        // Re-throw the error (either the original ApiError or the new one)
         throw error;
     }
 }
 
 // --- Site Settings ---
 const defaultSiteSettings: SiteSettings = {
-    id: 'ss_main_default_placeholder', // Placeholder ID
+    id: 'ss_main_default_placeholder',
     hospitalName: 'Grace Hospital',
     logoUrl: '',
     facebookUrl: '',
@@ -99,61 +137,83 @@ const defaultSiteSettings: SiteSettings = {
 
 export const getSiteSettings = async (): Promise<SiteSettings> => {
     try {
-        const settingsArray = await apiFetch<SiteSettings[]>('/api/site-settings');
-        if (settingsArray && settingsArray.length > 0) {
-            return settingsArray[0];
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        const settings = await apiFetch<SiteSettings>(`/api/site-settings?t=${timestamp}`);
+        return settings;
+    } catch (error: any) {
+        // Handle 404 specifically for site settings if needed, or just return default
+        if (error instanceof ApiError && error.status === 404) {
+             logger.warn("Site settings not found in DB (404), returning client-side default.");
+        } else {
+            logger.error("Failed to fetch site settings, returning client-side default:", error.message);
         }
-        // If no settings found in DB, the API should ideally handle creating a default one,
-        // or we return a hardcoded default for the frontend to function.
-        console.warn("No site settings found in DB, returning client-side default.");
-        return defaultSiteSettings;
-    } catch (error) {
-        console.error("Failed to fetch site settings, returning client-side default:", error);
         return defaultSiteSettings;
     }
 };
 
 export const updateSiteSettings = async (data: Partial<Omit<SiteSettings, 'id' | 'created_at'>> & { id?: string }): Promise<SiteSettings> => {
-    // Site settings usually have a fixed ID or are treated as a single record.
-    // The API should handle upsert logic. We expect 'id' to be known if updating.
-    // If creating for the first time, API handles ID generation based on schema.
-    const settingsId = data.id || 'ss_main'; // Assuming 'ss_main' as a convention for the single settings doc
-    
-    // Remove id from data if it was temporarily added for the call
+    const settingsId = data.id || 'ss_main'; // Use a predictable ID like 'ss_main'
     const { id, ...payload } = data;
 
-    if (data.id && data.id !== defaultSiteSettings.id) { // If a real ID exists (not the placeholder)
-         return apiFetch<SiteSettings>(`/api/site-settings/${settingsId}`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-        });
-    }
-    // Attempt to POST, API should handle if it needs to create or update the single settings row.
+    // Use POST which should handle upsert logic in the API route
     return apiFetch<SiteSettings>('/api/site-settings', {
-        method: 'POST', // POST can also mean "create or update single resource"
+        method: 'POST',
         body: JSON.stringify(payload),
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
     });
 };
 
 
 // --- Hero Slides ---
 export const getHeroSlides = async (): Promise<HeroSlide[]> => {
-    return apiFetch<HeroSlide[]>('/api/hero-slides');
+    try {
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        return await apiFetch<HeroSlide[]>(`/api/hero-slides?t=${timestamp}`);
+    } catch (error) {
+        logger.error("Failed to fetch hero slides:", error);
+        return []; // Return empty array on error
+    }
 };
 export const createHeroSlide = async (data: Omit<HeroSlide, 'id' | 'created_at'>): Promise<HeroSlide> => {
-    return apiFetch<HeroSlide>('/api/hero-slides', { method: 'POST', body: JSON.stringify(data) });
+    return apiFetch<HeroSlide>('/api/hero-slides', { 
+        method: 'POST', 
+        body: JSON.stringify(data),
+        cache: 'no-store'
+    });
 };
-export const updateHeroSlide = async (id: string, data: Partial<Omit<HeroSlide, 'id' | 'created_at'>>): Promise<HeroSlide | null> => {
-    return apiFetch<HeroSlide>(`/api/hero-slides/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const updateHeroSlide = async (id: number, data: Partial<Omit<HeroSlide, 'id' | 'created_at'>>): Promise<HeroSlide | null> => {
+    try {
+        return await apiFetch<HeroSlide>(`/api/hero-slides/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(data),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update hero slide ${id}:`, error);
+        return null;
+    }
 };
-export const deleteHeroSlide = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/hero-slides/${id}`, { method: 'DELETE' });
-    return true;
+export const deleteHeroSlide = async (id: number): Promise<boolean> => {
+    try {
+        await apiFetch<void>(`/api/hero-slides/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete hero slide ${id}:`, error);
+        return false;
+    }
 };
 
 // --- About Content ---
 const defaultAboutContent: AboutContent = {
-    id: 'ac_main_default_placeholder',
+    id: 'ac_main_default_placeholder', // Use a placeholder ID
     title: 'About Us',
     description: 'Default description about the hospital.',
     mission: 'Default mission statement.',
@@ -162,113 +222,239 @@ const defaultAboutContent: AboutContent = {
     imageHint: '',
     created_at: new Date().toISOString(),
 };
+
 export const getAboutContent = async (): Promise<AboutContent> => {
     try {
-        const contentArray = await apiFetch<AboutContent[]>('/api/about-content');
-         if (contentArray && contentArray.length > 0) {
-            return contentArray[0];
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        // API route GET returns a single object or 404
+        const content = await apiFetch<AboutContent>(`/api/about-content?t=${timestamp}`);
+        return content;
+    } catch (error: any) {
+        // *** FIX: Handle 404 specifically by returning default content ***
+        if (error instanceof ApiError && error.status === 404) {
+            logger.warn("About content not found in DB (404), returning client-side default.");
+            // Return a copy of the default content to avoid potential mutations
+            return { ...defaultAboutContent }; 
+        } else {
+            // For other errors, log and return default
+            logger.error("Failed to fetch about content, returning client-side default:", error.message);
+            return { ...defaultAboutContent };
         }
-        console.warn("No about content found in DB, returning client-side default.");
-        return defaultAboutContent;
-    } catch (error) {
-        console.error("Failed to fetch about content, returning client-side default:", error);
-        return defaultAboutContent;
     }
 };
+
 export const updateAboutContent = async (data: Partial<Omit<AboutContent, 'id' | 'created_at'>> & { id?: string }): Promise<AboutContent> => {
-    const aboutId = data.id || 'ac_main'; // Assuming 'ac_main' for the single about content
+    // The API route POST handles both create (if ID=1 doesn't exist) and update (if ID=1 exists)
+    // We don't need to pass the ID in the payload if the API knows to use the fixed ID=1
     const { id, ...payload } = data;
 
-    if (data.id && data.id !== defaultAboutContent.id) {
-        return apiFetch<AboutContent>(`/api/about-content/${aboutId}`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-        });
+    // *** FIX: Ensure imageUrl is not a data URI before sending ***
+    // This check should ideally be in the component submitting the data,
+    // but adding a safeguard here.
+    if (typeof payload.imageUrl === 'string' && payload.imageUrl.startsWith('data:image')) {
+        logger.warn('Attempting to save a data URI as imageUrl. This is likely too long for the database. Clearing imageUrl.');
+        // Option 1: Clear it (safest if no upload mechanism exists)
+        payload.imageUrl = ''; 
+        // Option 2: Throw an error to be caught by the calling component
+        // throw new Error('Cannot save image data directly. Please upload the image first and save the URL.');
     }
-     return apiFetch<AboutContent>('/api/about-content', {
+
+    // Always use POST to the base route, letting the backend handle insert/update for the fixed ID
+    return apiFetch<AboutContent>('/api/about-content', {
         method: 'POST',
         body: JSON.stringify(payload),
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
     });
 };
 
 // --- Services ---
 export const getServices = async (): Promise<Service[]> => {
-    return apiFetch<Service[]>('/api/services');
+    try {
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        return await apiFetch<Service[]>(`/api/services?t=${timestamp}`);
+    } catch (error) {
+        logger.error("Failed to fetch services:", error);
+        return [];
+    }
 };
 export const createService = async (data: Omit<Service, 'id' | 'created_at'>): Promise<Service> => {
-    return apiFetch<Service>('/api/services', { method: 'POST', body: JSON.stringify(data) });
+    return apiFetch<Service>('/api/services', { 
+        method: 'POST', 
+        body: JSON.stringify(data),
+        cache: 'no-store'
+    });
 };
 export const updateService = async (id: string, data: Partial<Omit<Service, 'id' | 'created_at'>>): Promise<Service | null> => {
-    return apiFetch<Service>(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    try {
+        return await apiFetch<Service>(`/api/services/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(data),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update service ${id}:`, error);
+        return null;
+    }
 };
 export const deleteService = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/services/${id}`, { method: 'DELETE' });
-    return true;
+    try {
+        await apiFetch<void>(`/api/services/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete service ${id}:`, error);
+        return false;
+    }
 };
 
 // --- Facilities ---
 export const getFacilities = async (): Promise<Facility[]> => {
-    return apiFetch<Facility[]>('/api/facilities');
+    try {
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        return await apiFetch<Facility[]>(`/api/facilities?t=${timestamp}`);
+    } catch (error) {
+        logger.error("Failed to fetch facilities:", error);
+        return [];
+    }
 };
 export const createFacility = async (data: Omit<Facility, 'id' | 'created_at'>): Promise<Facility> => {
-    return apiFetch<Facility>('/api/facilities', { method: 'POST', body: JSON.stringify(data) });
+    return apiFetch<Facility>('/api/facilities', { 
+        method: 'POST', 
+        body: JSON.stringify(data),
+        cache: 'no-store'
+    });
 };
 export const updateFacility = async (id: string, data: Partial<Omit<Facility, 'id' | 'created_at'>>): Promise<Facility | null> => {
-    return apiFetch<Facility>(`/api/facilities/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    try {
+        return await apiFetch<Facility>(`/api/facilities/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(data),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update facility ${id}:`, error);
+        return null;
+    }
 };
 export const deleteFacility = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/facilities/${id}`, { method: 'DELETE' });
-    return true;
+    try {
+        await apiFetch<void>(`/api/facilities/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete facility ${id}:`, error);
+        return false;
+    }
 };
 
 // --- Departments ---
 export const getDepartments = async (): Promise<Department[]> => {
-    return apiFetch<Department[]>('/api/departments');
+    try {
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        return await apiFetch<Department[]>(`/api/departments?t=${timestamp}`);
+    } catch (error) {
+        logger.error("Failed to fetch departments:", error);
+        return [];
+    }
 };
 export const createDepartment = async (data: Omit<Department, 'id' | 'created_at'>): Promise<Department> => {
-    return apiFetch<Department>('/api/departments', { method: 'POST', body: JSON.stringify(data) });
+    return apiFetch<Department>('/api/departments', { 
+        method: 'POST', 
+        body: JSON.stringify(data),
+        cache: 'no-store'
+    });
 };
 export const updateDepartment = async (id: string, data: Partial<Omit<Department, 'id' | 'created_at'>>): Promise<Department | null> => {
-    return apiFetch<Department>(`/api/departments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    try {
+        return await apiFetch<Department>(`/api/departments/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(data),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update department ${id}:`, error);
+        return null;
+    }
 };
 export const deleteDepartment = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/departments/${id}`, { method: 'DELETE' });
-    return true;
+    try {
+        await apiFetch<void>(`/api/departments/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete department ${id}:`, error);
+        return false;
+    }
 };
 
 // --- Gallery Items ---
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
-    return apiFetch<GalleryItem[]>('/api/gallery-items');
+    try {
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        return await apiFetch<GalleryItem[]>(`/api/gallery-items?t=${timestamp}`);
+    } catch (error) {
+        logger.error("Failed to fetch gallery items:", error);
+        return [];
+    }
 };
 export const createGalleryItem = async (data: Omit<GalleryItem, 'id' | 'created_at'>): Promise<GalleryItem> => {
-    return apiFetch<GalleryItem>('/api/gallery-items', { method: 'POST', body: JSON.stringify(data) });
+    return apiFetch<GalleryItem>('/api/gallery-items', { 
+        method: 'POST', 
+        body: JSON.stringify(data),
+        cache: 'no-store'
+    });
 };
 export const updateGalleryItem = async (id: string, data: Partial<Omit<GalleryItem, 'id' | 'created_at'>>): Promise<GalleryItem | null> => {
-    return apiFetch<GalleryItem>(`/api/gallery-items/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    try {
+        return await apiFetch<GalleryItem>(`/api/gallery-items/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(data),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update gallery item ${id}:`, error);
+        return null;
+    }
 };
 export const deleteGalleryItem = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/gallery-items/${id}`, { method: 'DELETE' });
-    return true;
+    try {
+        await apiFetch<void>(`/api/gallery-items/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete gallery item ${id}:`, error);
+        return false;
+    }
 };
 
 // --- News Events ---
 export const getNewsEvents = async (): Promise<NewsEvent[]> => {
     try {
-        const items = await apiFetch<NewsEvent[]>('/api/news-events');
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        const items = await apiFetch<NewsEvent[]>(`/api/news-events?t=${timestamp}`);
         return items.map(item => ({
             ...item,
-            // Ensure date is consistently handled. API should return string, but defensive parsing.
             date: typeof item.date === 'string' ? item.date : new Date(item.date).toISOString().split('T')[0],
         }));
     } catch (error) {
-        console.error("Failed to fetch news events:", error);
+        logger.error("Failed to fetch news events:", error);
         return [];
     }
 };
 
 export const getNewsEventById = async (idOrLink: string): Promise<NewsEvent | undefined> => {
     try {
-        const item = await apiFetch<NewsEvent>(`/api/news-events/${encodeURIComponent(idOrLink)}`);
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        const item = await apiFetch<NewsEvent>(`/api/news-events/${encodeURIComponent(idOrLink)}?t=${timestamp}`);
         if (item) {
             return {
                 ...item,
@@ -277,31 +463,48 @@ export const getNewsEventById = async (idOrLink: string): Promise<NewsEvent | un
         }
         return undefined;
     } catch (error: any) {
-        if (error.message.includes('404') || error.message.toLowerCase().includes('not found')) {
+        if (error instanceof ApiError && error.status === 404) {
             return undefined;
         }
-        console.error(`Failed to fetch news event by id/link ${idOrLink}:`, error);
-        throw error;
+        logger.error(`Failed to fetch news event by id/link ${idOrLink}:`, error);
+        throw error; // Re-throw other errors
     }
 };
 export const createNewsEvent = async (data: Omit<NewsEvent, 'id' | 'created_at'>): Promise<NewsEvent> => {
-    // Ensure date is formatted as YYYY-MM-DD string before sending
     const payload = {
         ...data,
         date: data.date instanceof Date ? data.date.toISOString().split('T')[0] : String(data.date).split('T')[0],
     };
-    return apiFetch<NewsEvent>('/api/news-events', { method: 'POST', body: JSON.stringify(payload) });
+    return apiFetch<NewsEvent>('/api/news-events', { 
+        method: 'POST', 
+        body: JSON.stringify(payload),
+        cache: 'no-store'
+    });
 };
 export const updateNewsEvent = async (id: string, data: Partial<Omit<NewsEvent, 'id' | 'created_at'>>): Promise<NewsEvent | null> => {
     const payload = { ...data };
     if (payload.date) {
         payload.date = payload.date instanceof Date ? payload.date.toISOString().split('T')[0] : String(payload.date).split('T')[0];
     }
-    return apiFetch<NewsEvent>(`/api/news-events/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    try {
+        return await apiFetch<NewsEvent>(`/api/news-events/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(payload),
+            cache: 'no-store'
+        });
+    } catch (error) {
+        logger.error(`Failed to update news event ${id}:`, error);
+        return null;
+    }
 };
 export const deleteNewsEvent = async (id: string): Promise<boolean> => {
-    await apiFetch<void>(`/api/news-events/${id}`, { method: 'DELETE' });
-    return true;
+    try {
+        await apiFetch<void>(`/api/news-events/${id}`, { method: 'DELETE' });
+        return true;
+    } catch (error) {
+        logger.error(`Failed to delete news event ${id}:`, error);
+        return false;
+    }
 };
 
 // --- Contact Info ---
@@ -315,40 +518,42 @@ const defaultContactInfo: ContactInfo = {
 };
 export const getContactInfo = async (): Promise<ContactInfo> => {
     try {
-        const infoArray = await apiFetch<ContactInfo[]>('/api/contact-info');
-        if (infoArray && infoArray.length > 0) {
-            return infoArray[0];
+        // Force cache busting by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        // Assuming contact info API returns a single object
+        const info = await apiFetch<ContactInfo>(`/api/contact-info?t=${timestamp}`);
+        return info;
+    } catch (error: any) {
+        if (error instanceof ApiError && error.status === 404) {
+            logger.warn("Contact info not found in DB (404), returning client-side default.");
+        } else {
+            logger.error("Failed to fetch contact info, returning client-side default:", error.message);
         }
-        console.warn("No contact info found in DB, returning client-side default.");
-        return defaultContactInfo;
-    } catch (error) {
-        console.error("Failed to fetch contact info, returning client-side default:", error);
-        return defaultContactInfo;
+        return { ...defaultContactInfo };
     }
 };
 export const updateContactInfo = async (data: Partial<Omit<ContactInfo, 'id' | 'created_at'>> & { id?: string }): Promise<ContactInfo> => {
-    const contactId = data.id || 'ci_main'; // Assuming 'ci_main' for the single contact info
     const { id, ...payload } = data;
-    
-    if (data.id && data.id !== defaultContactInfo.id) {
-        return apiFetch<ContactInfo>(`/api/contact-info/${contactId}`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-        });
-    }
+    // Use POST to handle upsert in the API
     return apiFetch<ContactInfo>('/api/contact-info', {
         method: 'POST',
         body: JSON.stringify(payload),
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
     });
 };
 
-// --- Authentication (Mock - To be replaced with a real auth system e.g. NextAuth.js or Firebase Auth) ---
+// --- Authentication ---
+// Original simple authentication function
 const MOCK_ADMIN_USERNAME = 'admin';
 const MOCK_ADMIN_PASSWORD = 'password123';
 
 export const verifyAdminCredentials = async (username?: string, password?: string): Promise<boolean> => {
-    // IMPORTANT: This is NOT secure and for demonstration purposes only.
-    // In a real application, this should be handled by a proper authentication system.
-    console.warn("Using MOCK admin authentication. Replace with a secure solution for production.");
+    logger.warn("Using MOCK admin authentication. Replace with a secure solution for production.");
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
 };

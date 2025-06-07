@@ -26,13 +26,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
 import { getHeroSlides, deleteHeroSlide, HeroSlide } from '@/lib/mock-data';
-import NextImage from 'next/image'; // Use next/image for previews
+import Image from 'next/image'; // Use next/image for previews
 import HeroSlideFormDialog from './_components/hero-slide-form-dialog';
 
 export default function ManageHeroSlidesPage() {
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessingDelete, setIsProcessingDelete] = useState<string | null>(null);
+  const [isProcessingDelete, setIsProcessingDelete] = useState<number | null>(null);
   const [selectedSlide, setSelectedSlide] = useState<HeroSlide | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
@@ -67,7 +67,7 @@ export default function ManageHeroSlidesPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     setIsProcessingDelete(id);
     try {
       const success = await deleteHeroSlide(id);
@@ -128,12 +128,15 @@ export default function ManageHeroSlidesPage() {
             <TableRow key={slide.id}>
               <TableCell className="w-[80px]">
                 <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
-                  <NextImage
+                  <Image
                     src={slide.src}
                     alt={slide.alt || 'Hero slide thumbnail'}
-                    layout="fill"
-                    objectFit="cover"
+                    fill={true} // Use fill instead of layout="fill"
+                    style={{ objectFit: 'cover' }} // Use style for objectFit
                     unoptimized
+                    onError={() => {
+                      console.warn(`Failed to load image: ${slide.src}`);
+                    }}
                   />
                 </div>
               </TableCell>
@@ -217,3 +220,4 @@ export default function ManageHeroSlidesPage() {
     </Card>
   );
 }
+

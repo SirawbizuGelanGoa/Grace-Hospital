@@ -1,15 +1,21 @@
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { SiteSettingsSQL } from '@/lib/schema-types';
 import { randomUUID } from 'crypto'; // For generating UUID if needed
 
-// GET site settings (expects a single row)
+// GET site settings (returns a single object, not an array)
 export async function GET() {
   try {
     const settings = await query('SELECT * FROM site_settings LIMIT 1') as SiteSettingsSQL[];
-    return NextResponse.json(settings); // Returns an array, client should take settings[0]
+    
+    if (settings.length === 0) {
+      // Return 404 if no settings found
+      return NextResponse.json({ message: 'Site settings not found' }, { status: 404 });
+    }
+    
+    // Return the first (and should be only) settings object, not the array
+    return NextResponse.json(settings[0]);
   } catch (error: any) {
     console.error('API Error GET /api/site-settings:', error);
     return NextResponse.json({ message: 'Failed to fetch site settings', error: error.message }, { status: 500 });
@@ -59,9 +65,18 @@ export async function POST(request: NextRequest) {
       const result = await query('SELECT * FROM site_settings WHERE id = ?', [newId]) as SiteSettingsSQL[];
       savedSettings = result[0];
     }
-    return NextResponse.json(savedSettings, { status: existingSettings.length > 0 ? 200 : 201 });
+    
+    // Add cache control headers to prevent stale data
+    const headers = new Headers();
+    headers.append('Cache-Control', 'no-store, max-age=0');
+    
+    return NextResponse.json(savedSettings, { 
+      status: existingSettings.length > 0 ? 200 : 201,
+      headers
+    });
   } catch (error: any) {
     console.error('API Error POST /api/site-settings:', error);
     return NextResponse.json({ message: 'Failed to save site settings', error: error.message }, { status: 500 });
   }
 }
+

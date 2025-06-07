@@ -1,46 +1,65 @@
-'use client'; // Allow usage in client components if needed, though primarily for server
+'use client';
 
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
-import type { LucideProps } from 'lucide-react';
 
-// Type guard to check if a key is a valid Lucide icon name
-const isValidIconName = (name: string): name is keyof typeof LucideIcons => {
-  return name in LucideIcons;
-};
-
-interface DynamicIconProps extends LucideProps {
+// Type for the component props
+interface DynamicIconProps {
   name: string;
+  className?: string;
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
 }
 
-const DynamicIcon: React.FC<DynamicIconProps> = ({ name, ...props }) => {
-  if (isValidIconName(name)) {
-    const IconComponent = LucideIcons[name];
-    // Ensure it's a component (functions are valid components in React)
-    if (typeof IconComponent === 'function' || typeof IconComponent === 'object') {
-       // @ts-ignore Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'typeof LucideIcons'.
-       const ConcreteIconComponent = IconComponent as React.ElementType;
-      return <ConcreteIconComponent {...props} />;
-    }
+/**
+ * DynamicIcon component that renders a Lucide icon based on the provided name
+ * 
+ * @param {string} name - The name of the Lucide icon to render
+ * @param {string} className - Optional CSS class names
+ * @param {number} size - Optional size in pixels
+ * @param {string} color - Optional color
+ * @param {number} strokeWidth - Optional stroke width
+ * @returns React component
+ */
+const DynamicIcon: React.FC<DynamicIconProps> = ({ 
+  name, 
+  className, 
+  size = 24, 
+  color,
+  strokeWidth = 2
+}) => {
+  // Get the icon component from Lucide
+  const IconComponent = LucideIcons[name as keyof typeof LucideIcons];
+  
+  // If the icon exists, render it with the provided props
+  if (IconComponent) {
+    return (
+      <IconComponent 
+        className={className} 
+        size={size} 
+        color={color}
+        strokeWidth={strokeWidth}
+      />
+    );
   }
-
-  // Fallback icon or null if the name is invalid or not a component
-  console.warn(`Lucide icon "${name}" not found. Rendering fallback.`);
-  const FallbackIcon = LucideIcons.HelpCircle; // Or any other default icon
-  return <FallbackIcon {...props} />;
+  
+  // Fallback to a default icon if the requested one doesn't exist
+  return <LucideIcons.HelpCircle className={className} size={size} color={color} strokeWidth={strokeWidth} />;
 };
 
 export default DynamicIcon;
 
-// Function to get an icon component directly (useful in server components)
-export const getLucideIcon = (name: string): React.ElementType | typeof LucideIcons.HelpCircle => {
-    if (isValidIconName(name)) {
-      const IconComponent = LucideIcons[name];
-       if (typeof IconComponent === 'function' || typeof IconComponent === 'object') {
-          // @ts-ignore
-          return IconComponent as React.ElementType;
-       }
-    }
-    console.warn(`Lucide icon "${name}" not found. Returning fallback.`);
-    return LucideIcons.HelpCircle; // Fallback icon
-}
+// Export a list of all available icon names for use in selectors
+export const availableIconNames = Object.keys(LucideIcons)
+  .filter(key => {
+    const value = LucideIcons[key as keyof typeof LucideIcons];
+    // Check if it's a function (React components are functions)
+    // and if its name starts with an uppercase letter (convention for components)
+    // and it's not one of the known non-icon utility exports.
+    return typeof value === 'function' &&
+           key[0] === key[0].toUpperCase() && // Ensures PascalCase like 'Activity'
+           !['LucideIcon', 'LucideProps', 'createLucideIcon'].includes(key); // Exclude non-icon exports
+  })
+  .sort();
+

@@ -1,4 +1,3 @@
-
 "use client"; 
 
 import { useState, useEffect } from 'react';
@@ -8,36 +7,64 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Phone, Mail, MapPin, Loader2 } from 'lucide-react';
-import { getContactInfo, ContactInfo } from '@/lib/mock-data'; 
+// Removed: import { getContactInfo, ContactInfo } from '@/lib/mock-data'; 
 import { Skeleton } from '@/components/ui/skeleton'; 
 import { useToast } from '@/hooks/use-toast';
+
+// Define a type for the contact details fetched from the API
+// Adjust this based on the actual structure returned by your API
+interface ContactDetails {
+  id: number; // Or string if your ID is different
+  address: string;
+  phone: string;
+  email: string;
+  mapPlaceholder: string | null;
+  created_at?: string; // Optional, depending on API response
+}
 
 const ContactSection = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactDetails, setContactDetails] = useState<ContactInfo | null>(null);
+  // Use the new ContactDetails interface
+  const [contactDetails, setContactDetails] = useState<ContactDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
 
   useEffect(() => {
     const fetchContactData = async () => {
       try {
         setIsLoadingDetails(true);
-        const data = await getContactInfo();
-        setContactDetails(data);
+        // --- MODIFICATION: Fetch from API endpoint --- 
+        const response = await fetch('/api/contact-info'); 
+        
+        if (!response.ok) {
+          // Handle API errors (e.g., 404 Not Found if no data exists yet)
+          if (response.status === 404) {
+            console.warn("Contact info not found in database.");
+            setContactDetails(null); // Explicitly set to null if not found
+          } else {
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+          }
+        } else {
+          // Parse the JSON data from the response
+          const data: ContactDetails = await response.json();
+          setContactDetails(data);
+        }
       } catch (error) {
         console.error("Failed to fetch contact info:", error);
         toast({
-          title: "Error",
-          description: "Failed to load contact details.",
+          title: "Error Loading Contact Info",
+          description: "Could not load contact details from the server.",
           variant: "destructive",
         });
+        setContactDetails(null); // Ensure details are null on error
       } finally {
         setIsLoadingDetails(false);
       }
     };
     fetchContactData();
-  }, [toast]);
+    // Removed toast from dependency array as it's stable from the hook
+  }, []); // Run only once on component mount
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -50,7 +77,8 @@ const ContactSection = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('/api/contact', {
+      // This part submits the contact *message* form, seems okay
+      const response = await fetch('/api/contact', { // Assuming /api/contact is for sending messages
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,6 +115,7 @@ const ContactSection = () => {
   };
 
   const renderMapContent = () => {
+    // This logic remains the same, using contactDetails state
     const mapValue = contactDetails?.mapPlaceholder;
 
     if (!mapValue) {
@@ -145,6 +174,7 @@ const ContactSection = () => {
                </CardHeader>
                <CardContent className="space-y-6 text-muted-foreground">
                 {isLoadingDetails ? (
+                    // Skeleton loading state remains the same
                     <>
                      <div className="flex items-start gap-4">
                        <Skeleton className="h-6 w-6 rounded-full mt-1 shrink-0" />
@@ -161,6 +191,7 @@ const ContactSection = () => {
                       <Skeleton className="mt-6 h-64 md:h-80 w-full rounded-lg" />
                     </>
                  ) : contactDetails ? (
+                  // Display fetched data
                   <>
                     <div className="flex items-start gap-4">
                      <MapPin className="h-6 w-6 text-accent mt-1 shrink-0" />
@@ -179,13 +210,15 @@ const ContactSection = () => {
                    </div>
                   </>
                  ) : (
-                   <p>Failed to load contact information.</p>
+                   // Display message if no contact info is found or failed to load
+                   <p>Contact information is currently unavailable.</p>
                  )}
                </CardContent>
              </Card>
           </div>
 
           <div>
+            {/* Contact message form remains the same */}
             <Card className="shadow-lg h-full">
               <CardHeader>
                 <CardTitle className="text-2xl font-semibold text-primary">Send Us a Message</CardTitle>
@@ -248,3 +281,4 @@ const ContactSection = () => {
 };
 
 export default ContactSection;
+

@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getServices, deleteService, Service } from '@/lib/mock-data';
 import DynamicIcon from '@/lib/icons';
 import ServiceFormDialog from './_components/service-form-dialog'; // Import the form dialog
+import Image from 'next/image'; // Import for image previews
 
 export default function ManageServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -112,6 +113,7 @@ export default function ManageServicesPage() {
               <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
               <TableCell><Skeleton className="h-5 w-32" /></TableCell>
               <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+              <TableCell><Skeleton className="h-10 w-16 rounded" /></TableCell>
               <TableCell className="text-right space-x-2">
                 <Skeleton className="h-8 w-8 inline-block" />
                 <Skeleton className="h-8 w-8 inline-block" />
@@ -120,7 +122,7 @@ export default function ManageServicesPage() {
           ))
         ) : services.length === 0 ? (
           <TableRow>
-             <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+             <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                No services found. Add one to get started!
              </TableCell>
           </TableRow>
@@ -132,6 +134,22 @@ export default function ManageServicesPage() {
               </TableCell>
               <TableCell className="font-medium">{service.name}</TableCell>
               <TableCell className="text-muted-foreground">{service.description}</TableCell>
+              <TableCell className="w-[80px]">
+                {service.imageUrl && (
+                  <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
+                    <Image
+                      src={service.imageUrl}
+                      alt={`${service.name} image`}
+                      fill={true} // Use fill instead of layout="fill"
+                      style={{ objectFit: 'cover' }} // Use style for objectFit
+                      unoptimized
+                      onError={() => {
+                        console.warn(`Failed to load image: ${service.imageUrl}`);
+                      }}
+                    />
+                  </div>
+                )}
+              </TableCell>
               <TableCell className="text-right space-x-2">
                  <Button variant="outline" size="icon" onClick={() => handleEdit(service)} aria-label={`Edit ${service.name}`}>
                    <Edit className="h-4 w-4" />
@@ -190,6 +208,7 @@ export default function ManageServicesPage() {
               <TableHead className="w-[50px]">Icon</TableHead>
               <TableHead className="w-[200px]">Name</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead className="w-[80px]">Image</TableHead>
               <TableHead className="text-right w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -207,3 +226,4 @@ export default function ManageServicesPage() {
     </Card>
   );
 }
+

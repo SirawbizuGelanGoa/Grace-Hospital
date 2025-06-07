@@ -26,7 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
 import { getFacilities, deleteFacility, Facility } from '@/lib/mock-data';
-import DynamicIcon from '@/lib/icons';
+import Image from 'next/image'; // Import for image previews
 import FacilityFormDialog from './_components/facility-form-dialog'; // Import the form dialog
 
 export default function ManageFacilitiesPage() {
@@ -72,7 +72,7 @@ export default function ManageFacilitiesPage() {
     try {
       const success = await deleteFacility(id);
       if (success) {
-        setFacilities(prev => prev.filter(f => f.id !== id));
+        setFacilities(prev => prev.filter(facility => facility.id !== id));
         toast({
           title: "Success",
           description: "Facility deleted successfully.",
@@ -93,7 +93,7 @@ export default function ManageFacilitiesPage() {
 
    const handleFormSuccess = (savedFacility: Facility) => {
      if (selectedFacility) {
-       setFacilities(prev => prev.map(f => f.id === savedFacility.id ? savedFacility : f));
+       setFacilities(prev => prev.map(facility => facility.id === savedFacility.id ? savedFacility : facility));
      } else {
        setFacilities(prev => [savedFacility, ...prev]);
      }
@@ -106,9 +106,10 @@ export default function ManageFacilitiesPage() {
         {isLoading ? (
           Array.from({ length: 3 }).map((_, index) => (
             <TableRow key={`skeleton-${index}`}>
-              <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-10 w-16 rounded" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-40" /></TableCell>
               <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
               <TableCell className="text-right space-x-2">
                 <Skeleton className="h-8 w-8 inline-block" />
                 <Skeleton className="h-8 w-8 inline-block" />
@@ -117,19 +118,37 @@ export default function ManageFacilitiesPage() {
           ))
         ) : facilities.length === 0 ? (
             <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No facilities found. Add one to get started!
                 </TableCell>
             </TableRow>
         ) : (
           facilities.map((facility) => (
             <TableRow key={facility.id}>
-              <TableCell>
-                <DynamicIcon name={facility.iconName || 'HelpCircle'} className="h-6 w-6 text-muted-foreground" />
+              <TableCell className="w-[80px]">
+                {facility.imageUrl ? (
+                  <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
+                    <Image
+                      src={facility.imageUrl}
+                      alt={facility.name || 'Facility thumbnail'}
+                      fill={true} // Use fill instead of layout="fill"
+                      style={{ objectFit: 'cover' }} // Use style for objectFit
+                      unoptimized
+                      onError={() => {
+                        console.warn(`Failed to load image: ${facility.imageUrl}`);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10 w-16 rounded border bg-muted flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">No image</span>
+                  </div>
+                )}
               </TableCell>
-              <TableCell className="font-medium">{facility.name}</TableCell>
-              <TableCell className="text-muted-foreground">{facility.description}</TableCell>
-              <TableCell className="text-right space-x-2">
+              <TableCell className="font-medium w-[200px] truncate">{facility.name}</TableCell>
+              <TableCell className="text-muted-foreground text-xs truncate max-w-[400px]">{facility.description}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">{facility.hint || 'N/A'}</TableCell>
+              <TableCell className="text-right space-x-2 w-[120px]">
                  <Button variant="outline" size="icon" onClick={() => handleEdit(facility)} aria-label={`Edit ${facility.name}`}>
                    <Edit className="h-4 w-4" />
                  </Button>
@@ -173,7 +192,7 @@ export default function ManageFacilitiesPage() {
         <div className="flex justify-between items-center">
            <div>
              <CardTitle>Manage Facilities</CardTitle>
-             <CardDescription>Add, edit, or delete hospital facilities.</CardDescription>
+             <CardDescription>Add, edit, or delete hospital facilities and equipment.</CardDescription>
            </div>
           <Button onClick={handleAddNew}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Facility
@@ -184,10 +203,11 @@ export default function ManageFacilitiesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">Icon</TableHead>
-              <TableHead className="w-[200px]">Name</TableHead>
+              <TableHead>Image</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="text-right w-[120px]">Actions</TableHead>
+              <TableHead>AI Hint</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
            {MemoizedTableBody}
@@ -203,3 +223,4 @@ export default function ManageFacilitiesPage() {
     </Card>
   );
 }
+

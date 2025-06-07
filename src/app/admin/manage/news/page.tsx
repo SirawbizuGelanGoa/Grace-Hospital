@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Calendar } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,26 +25,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getNewsEvents, deleteNewsEvent, NewsEvent } from '@/lib/mock-data';
+import { getNewsItems, deleteNewsItem, NewsItem } from '@/lib/mock-data';
 import { format } from 'date-fns';
-import Image from 'next/image'; // Use next/image for previews
+import Image from 'next/image'; // Import for image previews
 import NewsFormDialog from './_components/news-form-dialog'; // Import the form dialog
 
 export default function ManageNewsPage() {
-  const [newsItems, setNewsItems] = useState<NewsEvent[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingDelete, setIsProcessingDelete] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<NewsEvent | null>(null);
+  const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchNewsData = async () => {
     setIsLoading(true);
     try {
-      const data = await getNewsEvents();
-       // Ensure data is sorted by date descending
-      const sortedData = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setNewsItems(sortedData);
+      const data = await getNewsItems();
+      setNewsItems(data);
     } catch (error) {
       toast({
         title: "Error",
@@ -61,19 +59,19 @@ export default function ManageNewsPage() {
   }, []);
 
   const handleAddNew = () => {
-    setSelectedItem(null);
+    setSelectedNewsItem(null);
     setIsFormOpen(true);
   };
 
-  const handleEdit = (item: NewsEvent) => {
-    setSelectedItem(item);
+  const handleEdit = (newsItem: NewsItem) => {
+    setSelectedNewsItem(newsItem);
     setIsFormOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     setIsProcessingDelete(id);
     try {
-      const success = await deleteNewsEvent(id);
+      const success = await deleteNewsItem(id);
       if (success) {
         setNewsItems(prev => prev.filter(item => item.id !== id));
         toast({
@@ -94,29 +92,24 @@ export default function ManageNewsPage() {
     }
   };
 
-   const handleFormSuccess = (savedItem: NewsEvent) => {
-     let updatedList: NewsEvent[];
-     if (selectedItem) {
-        updatedList = newsItems.map(item => item.id === savedItem.id ? savedItem : item);
+   const handleFormSuccess = (savedNewsItem: NewsItem) => {
+     if (selectedNewsItem) {
+       setNewsItems(prev => prev.map(item => item.id === savedNewsItem.id ? savedNewsItem : item));
      } else {
-        updatedList = [savedItem, ...newsItems];
+       setNewsItems(prev => [savedNewsItem, ...prev]);
      }
-      // Re-sort the list by date after adding/updating
-     updatedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-     setNewsItems(updatedList);
-
      setIsFormOpen(false);
-     setSelectedItem(null);
+     setSelectedNewsItem(null);
    };
 
-   const formatDate = (dateString: string) => {
-     try {
-       return format(new Date(dateString), 'PPP'); // e.g., Jul 20, 2024
-     } catch {
-       return 'Invalid Date';
-     }
-   };
-
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy');
+    } catch (error) {
+      console.error("Invalid date format:", dateString);
+      return "Invalid date";
+    }
+  };
 
   const MemoizedTableBody = useMemo(() => (
      <TableBody>
@@ -125,8 +118,9 @@ export default function ManageNewsPage() {
             <TableRow key={`skeleton-${index}`}>
               <TableCell><Skeleton className="h-10 w-16 rounded" /></TableCell>
               <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
               <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
               <TableCell className="text-right space-x-2">
                 <Skeleton className="h-8 w-8 inline-block" />
                 <Skeleton className="h-8 w-8 inline-block" />
@@ -135,27 +129,40 @@ export default function ManageNewsPage() {
           ))
         ) : newsItems.length === 0 ? (
             <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No news or events found. Add one to get started!
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No news items found. Add one to get started!
                 </TableCell>
             </TableRow>
         ) : (
           newsItems.map((item) => (
             <TableRow key={item.id}>
-             <TableCell className="w-[80px]">
-                <div className="relative h-10 w-16 rounded overflow-hidden border">
-                  <Image
-                    src={item.image}
-                    alt={item.title || 'News image'}
-                    layout="fill"
-                    objectFit="cover"
-                    unoptimized
-                  />
-                </div>
+              <TableCell className="w-[80px]">
+                {item.imageUrl ? (
+                  <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title || 'News thumbnail'}
+                      fill={true} // Use fill instead of layout="fill"
+                      style={{ objectFit: 'cover' }} // Use style for objectFit
+                      unoptimized
+                      onError={() => {
+                        console.warn(`Failed to load image: ${item.imageUrl}`);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10 w-16 rounded border bg-muted flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">No image</span>
+                  </div>
+                )}
               </TableCell>
-              <TableCell className="font-medium w-[300px]">{item.title}</TableCell>
-              <TableCell className="text-sm text-muted-foreground w-[120px]">{formatDate(item.date)}</TableCell>
-              <TableCell className="text-muted-foreground text-sm truncate">{item.summary}</TableCell>
+              <TableCell className="font-medium w-[250px] truncate">{item.title}</TableCell>
+              <TableCell className="text-muted-foreground text-xs truncate max-w-[300px]">{item.content}</TableCell>
+              <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                <Calendar className="h-3 w-3 inline-block mr-1" />
+                {formatDate(item.date)}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-xs">{item.author || 'N/A'}</TableCell>
               <TableCell className="text-right space-x-2 w-[120px]">
                  <Button variant="outline" size="icon" onClick={() => handleEdit(item)} aria-label={`Edit ${item.title}`}>
                    <Edit className="h-4 w-4" />
@@ -199,11 +206,11 @@ export default function ManageNewsPage() {
       <CardHeader>
         <div className="flex justify-between items-center">
            <div>
-             <CardTitle>Manage News & Events</CardTitle>
-             <CardDescription>Add, edit, or delete news articles and event announcements.</CardDescription>
+             <CardTitle>Manage News</CardTitle>
+             <CardDescription>Add, edit, or delete news items displayed on the website.</CardDescription>
            </div>
           <Button onClick={handleAddNew}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+            <PlusCircle className="mr-2 h-4 w-4" /> Add News Item
           </Button>
         </div>
       </CardHeader>
@@ -211,10 +218,11 @@ export default function ManageNewsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-               <TableHead>Image</TableHead>
+              <TableHead>Image</TableHead>
               <TableHead>Title</TableHead>
+              <TableHead>Content</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Summary</TableHead>
+              <TableHead>Author</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -225,9 +233,10 @@ export default function ManageNewsPage() {
       <NewsFormDialog
          isOpen={isFormOpen}
          setIsOpen={setIsFormOpen}
-         item={selectedItem}
+         newsItem={selectedNewsItem}
          onSuccess={handleFormSuccess}
       />
     </Card>
   );
 }
+
