@@ -24,8 +24,9 @@ import { Progress } from '@/components/ui/progress'; // Import Progress componen
 const departmentSchema = z.object({
   name: z.string().min(3, "Department name must be at least 3 characters long"),
   description: z.string().min(10, "Description must be at least 10 characters long"),
-  headDoctor: z.string().optional().or(z.literal('')),
-  imageUrl: z.string().optional().or(z.literal(''))
+  detailedDescription: z.string().min(20, "Detailed description must be at least 20 characters long"),
+  iconName: z.string().min(1, "Icon name is required"),
+  headOfDepartmentImage: z.string().optional().or(z.literal(''))
     .refine(value => {
       // Empty string is valid (optional image)
       if (!value) return true;
@@ -39,7 +40,7 @@ const departmentSchema = z.object({
       // Otherwise invalid
       return false;
     }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
-  hint: z.string().optional().or(z.literal('')),
+  headOfDepartmentImageHint: z.string().optional().or(z.literal('')),
 });
 
 type DepartmentFormData = z.infer<typeof departmentSchema>;
@@ -64,13 +65,14 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
     defaultValues: {
       name: '',
       description: '',
-      headDoctor: '',
-      imageUrl: '',
-      hint: '',
+      detailedDescription: '',
+      iconName: 'Stethoscope', // Default icon for departments
+      headOfDepartmentImage: '',
+      headOfDepartmentImageHint: '',
     },
   });
 
-  const watchedImageUrl = watch('imageUrl');
+  const watchedImageUrl = watch('headOfDepartmentImage');
 
   // Reset form when dialog opens/closes or department changes
   useEffect(() => {
@@ -80,19 +82,21 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
         reset({
           name: department.name || '',
           description: department.description || '',
-          headDoctor: department.headDoctor || '',
-          imageUrl: department.imageUrl || '',
-          hint: department.hint || '',
+          detailedDescription: department.detailedDescription || department.description || '',
+          iconName: department.iconName || 'Stethoscope',
+          headOfDepartmentImage: department.headOfDepartmentImage || '',
+          headOfDepartmentImageHint: department.headOfDepartmentImageHint || '',
         });
-        setImagePreview(department.imageUrl || undefined);
+        setImagePreview(department.headOfDepartmentImage || undefined);
       } else {
         // Add mode - reset to defaults
         reset({
           name: '',
           description: '',
-          headDoctor: '',
-          imageUrl: '',
-          hint: '',
+          detailedDescription: '',
+          iconName: 'Stethoscope',
+          headOfDepartmentImage: '',
+          headOfDepartmentImageHint: '',
         });
         setImagePreview(undefined);
       }
@@ -113,7 +117,7 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
       setIsUploading(true);
       setUploadProgress(0);
       setImagePreview(undefined); // Clear previous preview
-      setValue('imageUrl', '', { shouldValidate: false }); // Clear URL field while uploading
+      setValue('headOfDepartmentImage', '', { shouldValidate: false }); // Clear URL field while uploading
 
       const formData = new FormData();
       formData.append('file', file);
@@ -142,7 +146,7 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
         }
 
         // Update the form with the returned URL
-        setValue('imageUrl', result.url, { shouldValidate: true });
+        setValue('headOfDepartmentImage', result.url, { shouldValidate: true });
         setImagePreview(result.url);
         setFileName(undefined);
         toast({
@@ -203,6 +207,18 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
     }
   };
 
+  // Copy description to detailedDescription if the latter is empty
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const descriptionValue = e.target.value;
+    register("description").onChange(e);
+    
+    // If detailed description is empty, copy the description value to it
+    const detailedDescValue = watch("detailedDescription");
+    if (!detailedDescValue) {
+      setValue("detailedDescription", descriptionValue, { shouldValidate: true });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[500px]">
@@ -223,46 +239,61 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
-            {/* Description */}
+            {/* Short Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Short Description</Label>
               <Textarea 
                 id="description" 
-                {...register("description")} 
-                placeholder="Describe the department..." 
-                rows={3}
+                {...register("description")}
+                onChange={handleDescriptionChange}
+                placeholder="Brief description of the department..." 
+                rows={2}
                 disabled={isSaving || isUploading}
               />
               {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
             </div>
 
-            {/* Head Doctor */}
+            {/* Detailed Description */}
             <div className="grid gap-2">
-              <Label htmlFor="headDoctor">Head Doctor (Optional)</Label>
-              <Input 
-                id="headDoctor" 
-                {...register("headDoctor")} 
-                placeholder="e.g., Dr. John Smith" 
+              <Label htmlFor="detailedDescription">Detailed Description</Label>
+              <Textarea 
+                id="detailedDescription" 
+                {...register("detailedDescription")} 
+                placeholder="Provide a detailed description of the department..." 
+                rows={4}
                 disabled={isSaving || isUploading}
               />
-              {errors.headDoctor && <p className="text-sm text-destructive">{errors.headDoctor.message}</p>}
+              {errors.detailedDescription && <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>}
             </div>
 
-            {/* Image URL */}
+            {/* Icon Name */}
             <div className="grid gap-2">
-              <Label htmlFor="imageUrl">Image URL (Optional)</Label>
+              <Label htmlFor="iconName">Icon Name</Label>
               <Input 
-                id="imageUrl" 
-                {...register("imageUrl")} 
+                id="iconName" 
+                {...register("iconName")} 
+                placeholder="e.g., Stethoscope" 
+                disabled={isSaving || isUploading}
+              />
+              {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
+              <p className="text-xs text-muted-foreground">Enter a valid icon name (e.g., Stethoscope, Heart, Hospital)</p>
+            </div>
+
+            {/* Head of Department Image */}
+            <div className="grid gap-2">
+              <Label htmlFor="headOfDepartmentImage">Head of Department Image URL (Optional)</Label>
+              <Input 
+                id="headOfDepartmentImage" 
+                {...register("headOfDepartmentImage")} 
                 placeholder="https://example.com/image.jpg or upload below" 
                 disabled={isSaving || isUploading}
                 onChange={(e) => {
-                  setValue("imageUrl", e.target.value, {shouldValidate: true});
+                  setValue("headOfDepartmentImage", e.target.value, {shouldValidate: true});
                   setImagePreview(e.target.value || undefined);
                   setFileName(undefined);
                 }}
               />
-              {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
+              {errors.headOfDepartmentImage && <p className="text-sm text-destructive">{errors.headOfDepartmentImage.message}</p>}
               <p className="text-xs text-muted-foreground">Enter a full URL (https://...) or use the upload option below.</p>
             </div>
 
@@ -293,7 +324,7 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
                 <div className="relative h-40 w-full rounded border overflow-hidden bg-muted">
                   <Image
                     src={imagePreview}
-                    alt="Department image preview"
+                    alt="Department head image preview"
                     fill={true}
                     style={{ objectFit: 'cover' }}
                     unoptimized
@@ -308,15 +339,15 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
 
             {/* AI Hint */}
             <div className="grid gap-2">
-              <Label htmlFor="hint">Image AI Hint (Optional)</Label>
+              <Label htmlFor="headOfDepartmentImageHint">Image AI Hint (Optional)</Label>
               <Input 
-                id="hint" 
-                {...register("hint")} 
-                placeholder="e.g., cardiology department" 
+                id="headOfDepartmentImageHint" 
+                {...register("headOfDepartmentImageHint")} 
+                placeholder="e.g., doctor cardiology" 
                 disabled={isSaving || isUploading}
               />
               <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
-              {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
+              {errors.headOfDepartmentImageHint && <p className="text-sm text-destructive">{errors.headOfDepartmentImageHint.message}</p>}
             </div>
           </div>
           <DialogFooter>

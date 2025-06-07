@@ -24,6 +24,8 @@ import { Progress } from '@/components/ui/progress'; // Import Progress componen
 const facilitySchema = z.object({
   name: z.string().min(3, "Facility name must be at least 3 characters long"),
   description: z.string().min(10, "Description must be at least 10 characters long"),
+  detailedDescription: z.string().min(20, "Detailed description must be at least 20 characters long"),
+  iconName: z.string().optional(),
   imageUrl: z.string().optional().or(z.literal(''))
     .refine(value => {
       // Empty string is valid (optional image)
@@ -38,7 +40,7 @@ const facilitySchema = z.object({
       // Otherwise invalid
       return false;
     }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
-  hint: z.string().optional().or(z.literal('')),
+  imageHint: z.string().optional().or(z.literal('')),
 });
 
 type FacilityFormData = z.infer<typeof facilitySchema>;
@@ -63,8 +65,10 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
     defaultValues: {
       name: '',
       description: '',
+      detailedDescription: '',
+      iconName: 'Building', // Default icon
       imageUrl: '',
-      hint: '',
+      imageHint: '',
     },
   });
 
@@ -78,8 +82,10 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
         reset({
           name: facility.name || '',
           description: facility.description || '',
+          detailedDescription: facility.detailedDescription || facility.description || '',
+          iconName: facility.iconName || 'Building',
           imageUrl: facility.imageUrl || '',
-          hint: facility.hint || '',
+          imageHint: facility.imageHint || '',
         });
         setImagePreview(facility.imageUrl || undefined);
       } else {
@@ -87,8 +93,10 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
         reset({
           name: '',
           description: '',
+          detailedDescription: '',
+          iconName: 'Building',
           imageUrl: '',
-          hint: '',
+          imageHint: '',
         });
         setImagePreview(undefined);
       }
@@ -199,6 +207,18 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
     }
   };
 
+  // Copy description to detailedDescription if the latter is empty
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const descriptionValue = e.target.value;
+    register("description").onChange(e);
+    
+    // If detailed description is empty, copy the description value to it
+    const detailedDescValue = watch("detailedDescription");
+    if (!detailedDescValue) {
+      setValue("detailedDescription", descriptionValue, { shouldValidate: true });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[500px]">
@@ -221,15 +241,29 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Short Description</Label>
               <Textarea 
                 id="description" 
-                {...register("description")} 
-                placeholder="Describe the facility..." 
-                rows={3}
+                {...register("description")}
+                onChange={handleDescriptionChange}
+                placeholder="Brief description of the facility..." 
+                rows={2}
                 disabled={isSaving || isUploading}
               />
               {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            </div>
+
+            {/* Detailed Description */}
+            <div className="grid gap-2">
+              <Label htmlFor="detailedDescription">Detailed Description</Label>
+              <Textarea 
+                id="detailedDescription" 
+                {...register("detailedDescription")} 
+                placeholder="Provide a detailed description of the facility..." 
+                rows={4}
+                disabled={isSaving || isUploading}
+              />
+              {errors.detailedDescription && <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>}
             </div>
 
             {/* Image URL */}
@@ -292,15 +326,15 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
 
             {/* AI Hint */}
             <div className="grid gap-2">
-              <Label htmlFor="hint">Image AI Hint (Optional)</Label>
+              <Label htmlFor="imageHint">Image AI Hint (Optional)</Label>
               <Input 
-                id="hint" 
-                {...register("hint")} 
+                id="imageHint" 
+                {...register("imageHint")} 
                 placeholder="e.g., MRI machine" 
                 disabled={isSaving || isUploading}
               />
               <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
-              {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
+              {errors.imageHint && <p className="text-sm text-destructive">{errors.imageHint.message}</p>}
             </div>
           </div>
           <DialogFooter>

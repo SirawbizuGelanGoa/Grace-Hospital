@@ -35,9 +35,7 @@ const serviceSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
   description: z.string().min(10, "Short description must be at least 10 characters long").max(150, "Short description cannot exceed 150 characters"),
   detailedDescription: z.string().min(20, "Detailed description must be at least 20 characters long"),
-  iconName: z.string().refine(val => availableIconNames.includes(val), {
-       message: "Please select a valid icon",
-  }),
+  iconName: z.string().optional(), // Made optional
   imageUrl: z.string().optional().or(z.literal('')).refine(value => {
     // Empty string is valid (optional image)
     if (!value) return true;
@@ -69,6 +67,7 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [fileName, setFileName] = useState<string | undefined>(undefined);
+  const [iconSearchQuery, setIconSearchQuery] = useState('');
   const isEditing = !!service;
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<ServiceFormData>({
@@ -77,13 +76,20 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
       name: '',
       description: '',
       detailedDescription: '',
-      iconName: 'HelpCircle', 
+      iconName: 'HelpCircle', // Default to HelpCircle icon
       imageUrl: '',
     }
   });
 
   const selectedIconName = watch("iconName");
   const watchedImageUrl = watch('imageUrl');
+
+  // Filter icons based on search query
+  const filteredIcons = iconSearchQuery 
+    ? availableIconNames.filter(icon => 
+        icon.toLowerCase().includes(iconSearchQuery.toLowerCase())
+      )
+    : availableIconNames;
 
   useEffect(() => {
     if (isOpen) {
@@ -92,7 +98,7 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
             name: service.name,
             description: service.description,
             detailedDescription: service.detailedDescription,
-            iconName: availableIconNames.includes(service.iconName) ? service.iconName : 'HelpCircle',
+            iconName: service.iconName || 'HelpCircle', // Use HelpCircle as fallback
             imageUrl: service.imageUrl || '',
         });
         setImagePreview(service.imageUrl || undefined);
@@ -101,12 +107,13 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
             name: '',
             description: '',
             detailedDescription: '',
-            iconName: 'HelpCircle',
+            iconName: 'HelpCircle', // Default to HelpCircle icon for new services
             imageUrl: '',
         });
         setImagePreview(undefined);
       }
       setFileName(undefined);
+      setIconSearchQuery('');
     }
   }, [isOpen, service, reset]);
 
@@ -208,6 +215,7 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
         reset(); 
         setImagePreview(undefined);
         setFileName(undefined);
+        setIconSearchQuery('');
     }
     setIsOpen(open);
   };
@@ -259,21 +267,36 @@ export default function ServiceFormDialog({ isOpen, setIsOpen, service, onSucces
                        </div>
                     </SelectTrigger>
                     <SelectContent>
-                       <ScrollArea className="h-[250px]"> 
-                        {availableIconNames.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                             <div className="flex items-center gap-2">
-                               <DynamicIcon name={icon} className="h-5 w-5" />
-                               <span>{icon}</span>
-                             </div>
-                          </SelectItem>
-                        ))}
+                      <div className="p-2">
+                        <Input
+                          placeholder="Search icons..."
+                          value={iconSearchQuery}
+                          onChange={(e) => setIconSearchQuery(e.target.value)}
+                          className="mb-2"
+                        />
+                      </div>
+                      <ScrollArea className="h-[250px]"> 
+                        {filteredIcons.length > 0 ? (
+                          filteredIcons.map((icon) => (
+                            <SelectItem key={icon} value={icon}>
+                              <div className="flex items-center gap-2">
+                                <DynamicIcon name={icon} className="h-5 w-5" />
+                                <span>{icon}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-center text-muted-foreground">
+                            No icons found
+                          </div>
+                        )}
                       </ScrollArea>
                     </SelectContent>
                   </Select>
                 )}
              />
               {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
+              <p className="text-xs text-muted-foreground">Default icon is "HelpCircle". You can search for icons by name.</p>
            </div>
 
           {/* Image URL */}
