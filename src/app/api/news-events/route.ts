@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { NewsEventSQL } from '@/lib/schema-types';
-import { randomUUID } from 'crypto';
 
 export async function GET() {
   try {
@@ -30,12 +29,13 @@ export async function POST(request: NextRequest) {
     }
 
     const formattedDate = data.date instanceof Date ? data.date.toISOString().split('T')[0] : data.date;
-    const newId = randomUUID();
 
-    const sql = 'INSERT INTO news_events (id, title, date, summary, fullContent, image, link, hint) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    await query(sql, [newId, data.title, formattedDate, data.summary, data.fullContent, data.image, data.link, data.hint || null]);
+    // Removed 'id' from the INSERT statement to allow AUTO_INCREMENT to work
+    const sql = 'INSERT INTO news_events (title, date, summary, fullContent, image, link, hint) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const result: any = await query(sql, [data.title, formattedDate, data.summary, data.fullContent, data.image, data.link, data.hint || null]);
     
-    const newItems = await query('SELECT * FROM news_events WHERE id = ?', [newId]) as NewsEventSQL[];
+    // Retrieve the newly created item using the unique 'link' field
+    const newItems = await query('SELECT * FROM news_events WHERE link = ?', [data.link]) as NewsEventSQL[];
     if (newItems.length > 0) {
         return NextResponse.json({
             ...newItems[0],
@@ -51,3 +51,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Failed to create news/event', error: error.message }, { status: 500 });
   }
 }
+
+

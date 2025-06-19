@@ -129,21 +129,36 @@ export default function ManageGalleryPage() {
             <TableRow key={item.id}>
               <TableCell className="w-[80px]">
                 <div className="relative h-10 w-16 rounded overflow-hidden border">
-                  <Image
-                    src={item.src} // Use actual src for preview
-                    alt={item.alt || 'Gallery thumbnail'}
-                    fill={true} // Use fill instead of layout="fill"
-                    style={{ objectFit: 'cover' }} // Use style for objectFit
-                    unoptimized // Good for potentially external URLs
-                    onError={() => {
-                      console.warn(`Failed to load image: ${item.src}`);
-                    }}
-                  />
-                   {item.type === 'video' && (
-                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                       <Video className="h-5 w-5 text-white" />
-                     </div>
-                   )}
+                  {item.type === 'photo' ? (
+                    <Image
+                      src={item.src}
+                      alt={item.alt || 'Gallery thumbnail'}
+                      fill={true}
+                      style={{ objectFit: 'cover' }}
+                      unoptimized
+                      onError={() => {
+                        console.warn(`Failed to load image: ${item.src}`);
+                      }}
+                    />
+                  ) : (
+                    <div className="relative h-full w-full bg-black flex items-center justify-center">
+                      {/* Fixed: Use regular img tag for video thumbnails instead of Next.js Image component */}
+                      {/* This prevents Next.js from trying to optimize video files as images */}
+                      <img
+                        src={item.src}
+                        alt={item.alt || 'Video thumbnail'}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          console.warn(`Failed to load video thumbnail: ${item.src}`);
+                          // Fallback to a placeholder or hide the image
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Video className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TableCell>
                <TableCell className="w-[80px] capitalize">

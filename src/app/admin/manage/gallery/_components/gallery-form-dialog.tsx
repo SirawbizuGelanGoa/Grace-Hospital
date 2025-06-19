@@ -35,7 +35,8 @@ const gallerySchema = z.object({
     return false;
   }, { message: "Must be a valid URL (e.g., https://...) or an uploaded file path" }),
   alt: z.string().min(5, "Alternative text must be at least 5 characters long"),
-  hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional(),
+  hint: z.string().max(50, "AI hint should be concise (max 50 chars)").optional().or(z.literal('')),
+  position: z.number().optional(),
 });
 
 type GalleryFormData = z.infer<typeof gallerySchema>;
@@ -63,6 +64,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
       src: '',
       alt: '',
       hint: '',
+      position: 0,
     }
   });
 
@@ -77,6 +79,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
           src: item.src,
           alt: item.alt,
           hint: item.hint || '',
+          position: item.position || 0,
         });
         setFilePreview(item.src);
       } else {
@@ -85,6 +88,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
           src: '',
           alt: '',
           hint: '',
+          position: 0,
         });
         setFilePreview(undefined);
       }
@@ -248,7 +252,7 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="fileUpload">Or Upload File (Image/Video)</Label>
+            <Label htmlFor="fileUpload">Or Upload File</Label>
             <Input 
               id="fileUpload" 
               type="file" 
@@ -257,6 +261,9 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
               disabled={isSaving || isUploading}
               className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
             />
+            <p className="text-xs text-muted-foreground">
+              {itemType === 'photo' ? 'Supported formats: JPG, PNG, GIF, WebP' : 'Supported formats: MP4, WebM, MOV'}
+            </p>
             {fileName && !isUploading && <p className="text-sm text-muted-foreground">Selected file: {fileName}</p>}
             {isUploading && (
               <div className="space-y-1">
@@ -268,11 +275,11 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
 
           {filePreview && itemType === 'photo' && (
             <div className="space-y-1">
-              <Label>Preview</Label>
+              <Label>Photo Preview</Label>
                <div className="relative h-32 w-full rounded border overflow-hidden bg-muted">
                  <Image
                    src={filePreview}
-                   alt="Preview"
+                   alt="Photo preview"
                    fill={true}
                    style={{ objectFit: 'contain' }}
                    unoptimized
@@ -286,18 +293,21 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
            )}
            {filePreview && itemType === 'video' && (
               <div className="space-y-1">
-                <Label>Preview (Video)</Label>
+                <Label>Video Preview</Label>
                 <div className="relative h-32 w-full rounded border overflow-hidden bg-muted flex items-center justify-center">
                   {filePreview.startsWith('http') || filePreview.startsWith('/uploads') ? (
                     <video 
                       controls 
                       src={filePreview} 
                       className="max-h-full max-w-full"
+                      preload="metadata"
                       onError={() => {
                         console.warn(`Failed to load video preview: ${filePreview}`);
                         setFilePreview(undefined);
                       }}
-                    />
+                    >
+                      Your browser does not support the video tag.
+                    </video>
                   ) : (
                     <span className="text-muted-foreground text-sm">Video Preview (URL or upload)</span>
                   )}
@@ -307,13 +317,36 @@ export default function GalleryFormDialog({ isOpen, setIsOpen, item, onSuccess }
 
           <div className="space-y-1">
             <Label htmlFor="alt">Alternative Text (Required)</Label>
-            <Input id="alt" {...register("alt")} placeholder="Describe the image/video" disabled={isSaving || isUploading} />
+            <Input 
+              id="alt" 
+              {...register("alt")} 
+              placeholder={`Describe the ${itemType}...`}
+              disabled={isSaving || isUploading} 
+            />
             {errors.alt && <p className="text-sm text-destructive">{errors.alt.message}</p>}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="position">Position (Optional)</Label>
+            <Input 
+              id="position" 
+              type="number"
+              {...register("position", { valueAsNumber: true })} 
+              placeholder="0"
+              disabled={isSaving || isUploading} 
+            />
+            <p className="text-xs text-muted-foreground">Lower numbers appear first in the gallery.</p>
+            {errors.position && <p className="text-sm text-destructive">{errors.position.message}</p>}
           </div>
 
            <div className="space-y-1">
             <Label htmlFor="hint">AI Hint (Optional)</Label>
-            <Input id="hint" {...register("hint")} placeholder="e.g., hospital lobby" disabled={isSaving || isUploading} />
+            <Input 
+              id="hint" 
+              {...register("hint")} 
+              placeholder="e.g., hospital lobby" 
+              disabled={isSaving || isUploading} 
+            />
              <p className="text-xs text-muted-foreground">Keywords for AI image search (max 2 words).</p>
             {errors.hint && <p className="text-sm text-destructive">{errors.hint.message}</p>}
           </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -25,23 +26,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
-import { getNewsItems, deleteNewsItem, NewsItem } from '@/lib/mock-data';
+import { getNewsEvents, deleteNewsEvent, NewsEvent } from '@/lib/mock-data'; // Corrected import names and type
 import { format } from 'date-fns';
 import Image from 'next/image'; // Import for image previews
 import NewsFormDialog from './_components/news-form-dialog'; // Import the form dialog
 
 export default function ManageNewsPage() {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsEvent[]>([]); // Changed NewsItem to NewsEvent
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingDelete, setIsProcessingDelete] = useState<string | null>(null);
-  const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
+  const [selectedNewsItem, setSelectedNewsItem] = useState<NewsEvent | null>(null); // Changed NewsItem to NewsEvent
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchNewsData = async () => {
     setIsLoading(true);
     try {
-      const data = await getNewsItems();
+      const data = await getNewsEvents(); // Corrected function call
       setNewsItems(data);
     } catch (error) {
       toast({
@@ -63,7 +64,7 @@ export default function ManageNewsPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (newsItem: NewsItem) => {
+  const handleEdit = (newsItem: NewsEvent) => { // Changed NewsItem to NewsEvent
     setSelectedNewsItem(newsItem);
     setIsFormOpen(true);
   };
@@ -71,7 +72,7 @@ export default function ManageNewsPage() {
   const handleDelete = async (id: string) => {
     setIsProcessingDelete(id);
     try {
-      const success = await deleteNewsItem(id);
+      const success = await deleteNewsEvent(id); // Corrected function call
       if (success) {
         setNewsItems(prev => prev.filter(item => item.id !== id));
         toast({
@@ -92,7 +93,7 @@ export default function ManageNewsPage() {
     }
   };
 
-   const handleFormSuccess = (savedNewsItem: NewsItem) => {
+   const handleFormSuccess = (savedNewsItem: NewsEvent) => { // Changed NewsItem to NewsEvent
      if (selectedNewsItem) {
        setNewsItems(prev => prev.map(item => item.id === savedNewsItem.id ? savedNewsItem : item));
      } else {
@@ -137,16 +138,16 @@ export default function ManageNewsPage() {
           newsItems.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="w-[80px]">
-                {item.imageUrl ? (
+                {item.image ? (
                   <div className="relative h-10 w-16 rounded overflow-hidden border bg-muted">
                     <Image
-                      src={item.imageUrl}
+                      src={item.image}
                       alt={item.title || 'News thumbnail'}
-                      fill={true} // Use fill instead of layout="fill"
-                      style={{ objectFit: 'cover' }} // Use style for objectFit
+                      fill={true}
+                      style={{ objectFit: 'cover' }}
                       unoptimized
                       onError={() => {
-                        console.warn(`Failed to load image: ${item.imageUrl}`);
+                        console.warn(`Failed to load image: ${item.image}`);
                       }}
                     />
                   </div>
@@ -157,12 +158,12 @@ export default function ManageNewsPage() {
                 )}
               </TableCell>
               <TableCell className="font-medium w-[250px] truncate">{item.title}</TableCell>
-              <TableCell className="text-muted-foreground text-xs truncate max-w-[300px]">{item.content}</TableCell>
+              <TableCell className="text-muted-foreground text-xs truncate max-w-[300px]">{item.summary}</TableCell>
               <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                 <Calendar className="h-3 w-3 inline-block mr-1" />
                 {formatDate(item.date)}
               </TableCell>
-              <TableCell className="text-muted-foreground text-xs">{item.author || 'N/A'}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">{item.hint || 'N/A'}</TableCell>
               <TableCell className="text-right space-x-2 w-[120px]">
                  <Button variant="outline" size="icon" onClick={() => handleEdit(item)} aria-label={`Edit ${item.title}`}>
                    <Edit className="h-4 w-4" />
@@ -220,9 +221,9 @@ export default function ManageNewsPage() {
             <TableRow>
               <TableHead>Image</TableHead>
               <TableHead>Title</TableHead>
-              <TableHead>Content</TableHead>
+              <TableHead>Summary</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Author</TableHead>
+              <TableHead>Hint</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -239,4 +240,5 @@ export default function ManageNewsPage() {
     </Card>
   );
 }
+
 

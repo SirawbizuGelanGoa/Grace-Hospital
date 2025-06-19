@@ -1,19 +1,31 @@
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { NewsEventSQL } from '@/lib/schema-types';
 
 async function getNewsItem(idOrLink: string): Promise<NewsEventSQL | null> {
+    console.log(`getNewsItem received: ${idOrLink}`); // For debugging
     let items: NewsEventSQL[];
-    // Check if idOrLink looks like a UUID
-    if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(idOrLink)) {
-        items = await query('SELECT * FROM news_events WHERE id = ?', [idOrLink]) as NewsEventSQL[];
-    } else {
-        // Assume it's a link slug, ensure it starts with / if it's not already
-        const linkPath = idOrLink.startsWith('/') ? idOrLink : `/news/${idOrLink}`;
-        items = await query('SELECT * FROM news_events WHERE link = ?', [linkPath]) as NewsEventSQL[];
+
+    // Attempt to parse idOrLink as an integer (for 'id' column)
+    const numericId = parseInt(idOrLink, 10);
+
+    if (!isNaN(numericId)) {
+        // If it's a valid number, try fetching by 'id'
+        items = await query('SELECT * FROM news_events WHERE id = ?', [numericId]) as NewsEventSQL[];
+        if (items.length > 0) {
+            return { // Ensure date is string
+                ...items[0],
+                date: items[0].date instanceof Date ? items[0].date.toISOString().split('T')[0] : String(items[0].date),
+            };
+        }
     }
+
+    // If not found by numeric ID, or if idOrLink was not a number, try to fetch by 'link'
+    // Ensure the link always starts with /news/ for database query consistency
+    const queryLink = idOrLink.startsWith('/news/') ? idOrLink : `/news/${idOrLink}`;
+    items = await query('SELECT * FROM news_events WHERE link = ?', [queryLink]) as NewsEventSQL[];
+    
     if (items.length === 0) return null;
     return { // Ensure date is string
         ...items[0],
@@ -23,7 +35,8 @@ async function getNewsItem(idOrLink: string): Promise<NewsEventSQL | null> {
 
 
 export async function GET(request: NextRequest, { params }: { params: { idOrLink: string } }) {
-  const idOrLink = params.idOrLink;
+  // Await params to satisfy Next.js static analysis, even if it's not strictly a Promise
+  const idOrLink = await params.idOrLink;
   try {
     const item = await getNewsItem(idOrLink);
     if (!item) return NextResponse.json({ message: 'News/Event not found' }, { status: 404 });
@@ -34,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: { idOrLink
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { idOrLink: string } }) {
-  const id = params.idOrLink; // Assuming ID is passed for PUT
+  const id = await params.idOrLink; // Assuming ID is passed for PUT
   try {
     const data = await request.json() as Partial<Omit<NewsEventSQL, 'id' | 'created_at'>>;
     const fieldsToUpdate = [];
@@ -49,10 +62,9 @@ export async function PUT(request: NextRequest, { params }: { params: { idOrLink
     if (data.fullContent !== undefined) { fieldsToUpdate.push('fullContent = ?'); values.push(data.fullContent); }
     if (data.image !== undefined) { fieldsToUpdate.push('image = ?'); values.push(data.image); }
     if (data.link !== undefined) { 
-        if (!data.link.startsWith('/')) {
-             return NextResponse.json({ message: "Link must start with /" }, { status: 400 });
-        }
-        fieldsToUpdate.push('link = ?'); values.push(data.link); 
+        // Ensure link starts with /news/ for consistency
+        const formattedLink = data.link.startsWith('/news/') ? data.link : `/news/${data.link}`;
+        fieldsToUpdate.push('link = ?'); values.push(formattedLink); 
     }
     if (data.hint !== undefined) { fieldsToUpdate.push('hint = ?'); values.push(data.hint || null); }
     
@@ -74,7 +86,7 @@ export async function PUT(request: NextRequest, { params }: { params: { idOrLink
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { idOrLink: string } }) {
-  const id = params.idOrLink; // Assuming ID is passed for DELETE
+  const id = await params.idOrLink; // Assuming ID is passed for DELETE
   try {
     const result: any = await query('DELETE FROM news_events WHERE id = ?', [id]);
     if (result.affectedRows === 0) return NextResponse.json({ message: 'News/Event not found' }, { status: 404 });
@@ -83,3 +95,5 @@ export async function DELETE(request: NextRequest, { params }: { params: { idOrL
     return NextResponse.json({ message: 'Failed to delete news/event', error: error.message }, { status: 500 });
   }
 }
+
+
