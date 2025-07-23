@@ -1,35 +1,35 @@
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// Import the function to fetch data using the centralized API client
-import { getAboutContent, type AboutContent } from '@/lib/mock-data';
-
-// Define the structure of the About Content data (can reuse the type from mock-data)
-type AboutContentData = AboutContent;
-
-// Removed the local performFetch function as we now use getAboutContent from mock-data.ts
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { AboutContent } from '@/lib/schema-types';
+import Image from 'next/image';
 
 const AboutSection = async () => {
-  // --- CORRECTED: Use getAboutContent from mock-data.ts --- 
-  // This function handles server-side vs client-side URL construction
-  const aboutContent = await getAboutContent();
-  // --- End of correction ---
+  let displayContent: AboutContent;
 
-  const defaultContent: AboutContentData = {
-    // Use the type structure, providing default values
-    id: 'ac_main_default_placeholder', // Match default ID structure from mock-data
-    title: 'About Us',
-    description: 'Information about our hospital is coming soon.',
-    mission: 'Our mission will be available shortly.',
-    vision: 'Our vision will be available shortly.',
-    imageUrl: null,
-    imageHint: 'hospital building',
-    created_at: new Date().toISOString(), // Add default created_at
-  };
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/about-content`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
 
-  // Use the fetched content or the default if fetch failed or returned null/empty
-  // Note: getAboutContent already returns a default if fetch fails, 
-  // so this || defaultContent might be redundant but safe.
-  const displayContent = aboutContent || defaultContent;
+    if (!response.ok) {
+      throw new Error('Failed to fetch about content');
+    }
+
+    displayContent = await response.json();
+  } catch (error) {
+    console.error("Failed to fetch about content:", error);
+    displayContent = {
+      id: 'ac_main_default_placeholder',
+      title: 'About Us',
+      description: 'Information about our hospital is coming soon.',
+      mission: 'Our mission will be available shortly.',
+      vision: 'Our vision will be available shortly.',
+      imageUrl: null,
+      imageHint: 'hospital building',
+      created_at: new Date().toISOString(),
+    };
+  }
 
   return (
     <section id="about" className="py-16 bg-secondary">

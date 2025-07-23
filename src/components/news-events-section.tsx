@@ -3,11 +3,24 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarDays } from 'lucide-react';
-import { getNewsEvents } from '@/lib/mock-data'; // Import data fetching function
+import { getNewsEvents } from '@/lib/data-fetching'; // Import data fetching function
+import type { NewsEvent } from '@/lib/schema-types';
 
 const NewsEventsSection = async () => {
-  // Fetch news items from the mock source
-  const newsItems = await getNewsEvents();
+  let newsItems: NewsEvent[] = [];
+  try {
+    // Fetch news items from the API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news-events`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
+    if (response.ok) {
+      newsItems = await response.json();
+    } else {
+      console.error('Failed to fetch news and events');
+    }
+  } catch (error) {
+    console.error('Error fetching news and events:', error);
+  }
 
   return (
     <section id="news" className="py-16 bg-background">

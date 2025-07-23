@@ -1,9 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicIcon from "@/lib/icons"; 
-import { getServices } from '@/lib/mock-data'; 
+import type { Service } from '@/lib/schema-types';
 
 const ServicesSection = async () => {
-  const services = await getServices();
+  let services: Service[] = [];
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/services`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
+    if (response.ok) {
+      services = await response.json();
+    } else {
+      console.error('Failed to fetch services');
+    }
+  } catch (error) {
+    console.error('Error fetching services:', error);
+  }
 
   return (
     <section id="services" className="py-16 bg-background">

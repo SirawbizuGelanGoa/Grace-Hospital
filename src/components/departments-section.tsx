@@ -5,11 +5,23 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import DynamicIcon from "@/lib/icons"; 
-import { getDepartments } from '@/lib/mock-data'; 
 import NextImage from 'next/image';
+import type { Department } from '@/lib/schema-types';
 
 const DepartmentsSection = async () => {
-  const departments = await getDepartments();
+  let departments: Department[] = [];
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/departments`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
+    if (response.ok) {
+      departments = await response.json();
+    } else {
+      console.error('Failed to fetch departments');
+    }
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+  }
 
   return (
     <section id="departments" className="py-16 bg-background">

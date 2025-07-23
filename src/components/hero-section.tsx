@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getHeroSlides, HeroSlide } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { HeroSlide } from '@/lib/schema-types';
 
 const HeroSection = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -17,7 +17,11 @@ const HeroSection = () => {
     const fetchSlides = async () => {
       try {
         setIsLoading(true);
-        const fetchedSlides = await getHeroSlides();
+        const response = await fetch('/api/hero-slides');
+        if (!response.ok) {
+          throw new Error('Failed to fetch slides');
+        }
+        const fetchedSlides = await response.json();
         setSlides(fetchedSlides);
       } catch (error) {
         console.error("Failed to fetch hero slides:", error);

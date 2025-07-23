@@ -1,6 +1,12 @@
 
 import type {NextConfig} from 'next';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  process.env.GENKIT_DISABLED = 'true';
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -30,6 +36,12 @@ const nextConfig: NextConfig = {
   // The error 'The requested resource isn't a valid image for ...mp4' suggests Next.js's image optimization
   // is being applied to a video file. This next.config.ts only handles remote images.
   // If the video is a local asset, ensure it's served directly and not via next/image.
+  webpack: (config, { isServer }) => {
+    if (isProduction && isServer) {
+      config.externals = [...config.externals, '@genkit-ai/next'];
+    }
+    return config;
+  }
 };
 
 export default nextConfig;
