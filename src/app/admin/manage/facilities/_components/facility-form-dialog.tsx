@@ -19,6 +19,7 @@ import { createFacility, updateFacility, Facility } from '@/lib/mock-data';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress'; // Import Progress component
+import DynamicIcon from '@/lib/icons'; // Import DynamicIcon for icon preview
 
 // Define Zod schema for validation
 const facilitySchema = z.object({
@@ -73,6 +74,7 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
   });
 
   const watchedImageUrl = watch('imageUrl');
+  const selectedIconName = watch('iconName');
 
   // Reset form when dialog opens/closes or facility changes
   useEffect(() => {
@@ -264,6 +266,27 @@ export default function FacilityFormDialog({ isOpen, setIsOpen, facility, onSucc
                 disabled={isSaving || isUploading}
               />
               {errors.detailedDescription && <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>}
+            </div>
+
+            {/* Icon Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="iconName">Icon Name</Label>
+              <Input
+                id="iconName"
+                {...register("iconName")}
+                placeholder="e.g., Building, Home, Settings"
+                disabled={isSaving || isUploading}
+              />
+              {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
+              <p className="text-xs text-muted-foreground">Enter a Lucide React icon name (e.g., 'Building', 'Home').</p>
+              {selectedIconName && (
+                <div className="space-y-1 mt-2">
+                  <Label>Icon Preview</Label>
+                  <div className="flex items-center justify-center h-16 w-16 rounded border bg-muted">
+                    <DynamicIcon name={selectedIconName} className="h-8 w-8" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Image URL */}
