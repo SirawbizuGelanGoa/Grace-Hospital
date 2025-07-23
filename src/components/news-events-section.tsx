@@ -1,26 +1,31 @@
+'use client';
+
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarDays } from 'lucide-react';
-import { getNewsEvents } from '@/lib/data-fetching'; // Import data fetching function
+import { useState, useEffect } from 'react';
 import type { NewsEvent } from '@/lib/schema-types';
 
-const NewsEventsSection = async () => {
-  let newsItems: NewsEvent[] = [];
-  try {
-    // Fetch news items from the API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news-events`, {
-      next: { revalidate: 3600 }, // Revalidate every hour
-    });
-    if (response.ok) {
-      newsItems = await response.json();
-    } else {
-      console.error('Failed to fetch news and events');
-    }
-  } catch (error) {
-    console.error('Error fetching news and events:', error);
-  }
+const NewsEventsSection = () => {
+  const [newsItems, setNewsItems] = useState<NewsEvent[]>([]);
+
+  useEffect(() => {
+    const fetchNewsEvents = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news-events`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch news and events');
+        }
+        const data = await response.json();
+        setNewsItems(data);
+      } catch (error) {
+        console.error("Failed to fetch news and events:", error);
+      }
+    };
+    fetchNewsEvents();
+  }, []);
 
   return (
     <section id="news" className="py-16 bg-background">

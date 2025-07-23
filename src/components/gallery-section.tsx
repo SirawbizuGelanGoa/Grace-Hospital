@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogClose, DialogTitle } from "@/components/ui/dialog"; // Added DialogTitle
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, PlayCircle, X, Search } from 'lucide-react'; 
-import { getGalleryItems, GalleryItem } from '@/lib/mock-data'; 
+import type { GalleryItem } from '@/lib/schema-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const GallerySection = () => {
@@ -29,7 +29,11 @@ const GallerySection = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const items = await getGalleryItems();
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/gallery-items`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch gallery items');
+        }
+        const items = await response.json();
         setGalleryItems(items);
         setPhotos(items.filter(item => item.type === 'photo'));
         setVideos(items.filter(item => item.type === 'video'));

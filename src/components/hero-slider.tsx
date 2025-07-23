@@ -6,32 +6,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HeroSlide } from '@/lib/schema-types';
-import { Skeleton } from '@/components/ui/skeleton';
 
-const HeroSection = () => {
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
+const HeroSlider = ({ slides }: { slides: HeroSlide[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSlides = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hero-slides`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch slides');
-        }
-        const fetchedSlides = await response.json();
-        setSlides(fetchedSlides);
-      } catch (error) {
-        console.error("Failed to fetch hero slides:", error);
-        // Optionally set an error state and display a message
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSlides();
-  }, []);
 
   const goToPrevious = useCallback(() => {
     const isFirstSlide = currentIndex === 0;
@@ -56,31 +33,10 @@ const HeroSection = () => {
     setCurrentIndex(slideIndex);
   };
 
-  if (isLoading) {
-    return (
-      <section id="home" className="relative h-[60vh] w-full bg-muted flex justify-center items-center">
-        <Skeleton className="h-full w-full" />
-        <div className="absolute z-10 text-center text-white">
-          <Skeleton className="h-12 w-72 md:h-16 md:w-96 mb-4" />
-          <Skeleton className="h-6 w-60 md:h-8 md:w-80 mb-8" />
-          <Skeleton className="h-12 w-36" />
-        </div>
-      </section>
-    );
-  }
-
-  if (!slides || slides.length === 0) {
-    return (
-      <section id="home" className="relative h-[60vh] bg-muted flex justify-center items-center text-center">
-        <p className="text-foreground">No hero images available at the moment.</p>
-      </section>
-    );
-  }
-
   const currentSlide = slides[currentIndex];
 
   return (
-    <section id="home" className="relative h-[70vh] md:h-[80vh] w-full overflow-hidden group">
+    <>
       {slides.map((slide, index) => (
         <div
           key={slide.id}
@@ -100,7 +56,7 @@ const HeroSection = () => {
           />
         </div>
       ))}
-      
+
       <div className="absolute inset-0 z-20 flex flex-col justify-center items-center text-center text-white p-4">
         {currentSlide.title && (
           <h1 className="text-4xl md:text-6xl font-bold mb-4 animate-fade-in-down">
@@ -156,8 +112,8 @@ const HeroSection = () => {
           </div>
         </>
       )}
-    </section>
+    </>
   );
 };
 
-export default HeroSection;
+export default HeroSlider;
