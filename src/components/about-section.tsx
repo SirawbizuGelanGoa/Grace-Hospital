@@ -1,47 +1,19 @@
-'use client';
-
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
+import { getAboutContent } from '@/lib/api';
 import type { AboutContent } from '@/lib/schema-types';
 
-const AboutSection = () => {
-  const [displayContent, setDisplayContent] = useState<AboutContent | null>(null);
-
-  useEffect(() => {
-    const fetchAboutContent = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/about-content`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch about content');
-        }
-        const data = await response.json();
-        setDisplayContent(data);
-      } catch (error) {
-        console.error("Failed to fetch about content:", error);
-      }
-    };
-    fetchAboutContent();
-  }, []);
-
-  if (!displayContent) {
-    return (
-      <section id="about" className="py-16 bg-secondary">
-        <div className="container mx-auto px-4">
-          <Card className="overflow-hidden shadow-lg">
-            <CardHeader className="bg-primary text-primary-foreground">
-              <CardTitle className="text-3xl font-bold text-center">About Us</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 md:p-12">
-              <p className="text-lg text-foreground">
-                Information about our hospital is coming soon.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    );
-  }
+const AboutSection = async () => {
+  const displayContent = await getAboutContent() || {
+    id: 'ac_main_default_placeholder',
+    title: 'About Us',
+    description: 'Information about our hospital is coming soon.',
+    mission: 'Our mission will be available shortly.',
+    vision: 'Our vision will be available shortly.',
+    imageUrl: null,
+    imageHint: 'hospital building',
+    created_at: new Date().toISOString(),
+  };
 
   return (
     <section id="about" className="py-16 bg-secondary">

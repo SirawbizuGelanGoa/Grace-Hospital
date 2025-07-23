@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicIcon from "@/lib/icons"; 
+import { getFacilities } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import NextImage from 'next/image'; // Using NextImage
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,11 +20,7 @@ const FacilitiesSection = () => {
     const fetchFacilitiesData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facilities`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch facilities');
-        }
-        const data = await response.json();
+        const data = await getFacilities();
         setFacilities(data);
       } catch (error) {
         console.error("Failed to fetch facilities:", error);

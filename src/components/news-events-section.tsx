@@ -1,31 +1,13 @@
-'use client';
-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarDays } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { getNewsEvents } from '@/lib/api';
 import type { NewsEvent } from '@/lib/schema-types';
 
-const NewsEventsSection = () => {
-  const [newsItems, setNewsItems] = useState<NewsEvent[]>([]);
-
-  useEffect(() => {
-    const fetchNewsEvents = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news-events`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch news and events');
-        }
-        const data = await response.json();
-        setNewsItems(data);
-      } catch (error) {
-        console.error("Failed to fetch news and events:", error);
-      }
-    };
-    fetchNewsEvents();
-  }, []);
+const NewsEventsSection = async () => {
+  const newsItems = await getNewsEvents();
 
   return (
     <section id="news" className="py-16 bg-background">

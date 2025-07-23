@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Accordion,
   AccordionContent,
@@ -7,28 +5,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import DynamicIcon from "@/lib/icons"; 
-import { useState, useEffect } from 'react';
+import { getDepartments } from '@/lib/api';
 import NextImage from 'next/image';
 import type { Department } from '@/lib/schema-types';
 
-const DepartmentsSection = () => {
-  const [departments, setDepartments] = useState<Department[]>([]);
-
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/departments`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch departments');
-        }
-        const data = await response.json();
-        setDepartments(data);
-      } catch (error) {
-        console.error("Failed to fetch departments:", error);
-      }
-    };
-    fetchDepartments();
-  }, []);
+const DepartmentsSection = async () => {
+  const departments = await getDepartments();
 
   return (
     <section id="departments" className="py-16 bg-background">

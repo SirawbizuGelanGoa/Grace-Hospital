@@ -1,28 +1,10 @@
-'use client';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicIcon from "@/lib/icons"; 
-import { useState, useEffect } from 'react';
+import { getServices } from '@/lib/api';
 import type { Service } from '@/lib/schema-types';
 
-const ServicesSection = () => {
-  const [services, setServices] = useState<Service[]>([]);
-
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/services`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch services');
-        }
-        const data = await response.json();
-        setServices(data);
-      } catch (error) {
-        console.error("Failed to fetch services:", error);
-      }
-    };
-    fetchServices();
-  }, []);
+const ServicesSection = async () => {
+  const services = await getServices();
 
   return (
     <section id="services" className="py-16 bg-background">
