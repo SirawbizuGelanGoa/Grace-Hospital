@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +20,7 @@ import { createDepartment, updateDepartment, Department } from '@/lib/mock-data'
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress'; // Import Progress component
+import DynamicIcon from '@/lib/icons'; // Import DynamicIcon for icon preview
 
 // Define Zod schema for validation
 const departmentSchema = z.object({
@@ -40,7 +42,7 @@ const departmentSchema = z.object({
       // Otherwise invalid
       return false;
     }, { message: "Must be a valid URL (e.g., https://...) or an uploaded image path" }),
-  headOfDepartmentImageHint: z.string().optional().or(z.literal('')),
+  headOfDepartmentImageHint: z.string().optional().or(z.literal(''))
 });
 
 type DepartmentFormData = z.infer<typeof departmentSchema>;
@@ -73,6 +75,7 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
   });
 
   const watchedImageUrl = watch('headOfDepartmentImage');
+  const selectedIconName = watch('iconName');
 
   // Reset form when dialog opens/closes or department changes
   useEffect(() => {
@@ -180,10 +183,8 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
       
       if (department) {
         // Update existing department
-        savedDepartment = await updateDepartment({
-          ...data,
-          id: department.id,
-        });
+        // Pass department.id directly to the updateDepartment function
+        savedDepartment = await updateDepartment(department.id, data);
       } else {
         // Create new department
         savedDepartment = await createDepartment(data);
@@ -258,7 +259,7 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
               <Label htmlFor="detailedDescription">Detailed Description</Label>
               <Textarea 
                 id="detailedDescription" 
-                {...register("detailedDescription")} 
+                {...register("detailedDescription")}
                 placeholder="Provide a detailed description of the department..." 
                 rows={4}
                 disabled={isSaving || isUploading}
@@ -278,6 +279,15 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
               {errors.iconName && <p className="text-sm text-destructive">{errors.iconName.message}</p>}
               <p className="text-xs text-muted-foreground">Enter a valid icon name (e.g., Stethoscope, Heart, Hospital)</p>
             </div>
+
+            {selectedIconName && (
+                <div className="space-y-1 mt-2">
+                  <Label>Icon Preview</Label>
+                  <div className="flex items-center justify-center h-16 w-16 rounded border bg-muted">
+                    <DynamicIcon name={selectedIconName} className="h-8 w-8" />
+                  </div>
+                </div>
+              )}
 
             {/* Head of Department Image */}
             <div className="grid gap-2">
@@ -371,4 +381,5 @@ export default function DepartmentFormDialog({ isOpen, setIsOpen, department, on
     </Dialog>
   );
 }
+
 

@@ -176,9 +176,8 @@ export default function ManageSettingsPage() {
   const onSubmit: SubmitHandler<SiteSettingsFormData> = async (data) => {
     setIsSaving(true);
     try {
-      const dataToSave: SiteSettingsSQL = {
+      const dataToSave: Omit<SiteSettingsSQL, 'id'> = {
           ...data,
-          id: 'ss_main', // Assuming a fixed ID for site settings
           logoUrl: data.logoUrl || null,
           facebookUrl: data.facebookUrl || null,
           tiktokUrl: data.tiktokUrl || null,
