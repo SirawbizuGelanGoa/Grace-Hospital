@@ -1,10 +1,13 @@
+'use client';
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAboutContent } from '@/lib/api';
 import type { AboutContent } from '@/lib/schema-types';
+import { useState, useEffect } from 'react';
 
-const AboutSection = async () => {
-  const displayContent = await getAboutContent() || {
+const AboutSection = () => {
+  const [displayContent, setDisplayContent] = useState<AboutContent>({
     id: 'ac_main_default_placeholder',
     title: 'About Us',
     description: 'Information about our hospital is coming soon.',
@@ -13,6 +16,49 @@ const AboutSection = async () => {
     imageUrl: null,
     imageHint: 'hospital building',
     created_at: new Date().toISOString(),
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  const fetchContent = async () => {
+    try {
+      setIsLoading(true);
+      const content = await getAboutContent();
+      if (content) {
+        setDisplayContent(content);
+      }
+    } catch (error) {
+      console.error('Failed to fetch about content:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContent();
+  }, []);
+
+  // Refresh data when page becomes visible (for admin changes)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchContent();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Refresh data every 2 minutes to catch admin changes
+  useEffect(() => {
+    const interval = setInterval(fetchContent, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleImageError = () => {
+    console.error('Failed to load about section image');
+    setImageError(true);
   };
 
   return (
@@ -31,7 +77,7 @@ const AboutSection = async () => {
 
               {/* Image for Mobile */}
               <div className="md:hidden relative h-64 rounded-lg overflow-hidden shadow-md">
-                {displayContent.imageUrl ? (
+                {displayContent.imageUrl && !imageError ? (
                   <Image
                     src={displayContent.imageUrl}
                     alt={`About ${displayContent.title} Image`}
@@ -41,10 +87,14 @@ const AboutSection = async () => {
                     priority={false}
                     sizes="(max-width: 768px) 100vw, 50vw"
                     data-ai-hint={displayContent.imageHint || 'hospital staff'}
+                    onError={handleImageError}
                   />
                 ) : (
                   <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
-                    Image Not Available
+                    <div className="text-center">
+                      <p className="text-lg font-semibold">Image Not Available</p>
+                      {imageError && <p className="text-sm text-muted-foreground">Failed to load image</p>}
+                    </div>
                   </div>
                 )}
               </div>
@@ -64,7 +114,7 @@ const AboutSection = async () => {
 
             {/* Image for Desktop */}
             <div className="hidden md:block relative h-96 rounded-lg overflow-hidden shadow-md">
-              {displayContent.imageUrl ? (
+              {displayContent.imageUrl && !imageError ? (
                 <Image
                   src={displayContent.imageUrl}
                   alt={`About ${displayContent.title} Image`}
@@ -74,10 +124,14 @@ const AboutSection = async () => {
                   priority={false}
                   sizes="(min-width: 768px) 50vw, 100vw"
                   data-ai-hint={displayContent.imageHint || 'hospital staff'}
+                  onError={handleImageError}
                 />
               ) : (
                 <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
-                  Image Not Available
+                  <div className="text-center">
+                    <p className="text-lg font-semibold">Image Not Available</p>
+                    {imageError && <p className="text-sm text-muted-foreground">Failed to load image</p>}
+                  </div>
                 </div>
               )}
             </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { AboutContentSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 // Define the fixed ID for the about content row (assuming it should be a single row)
 const ABOUT_CONTENT_ID = 1;
@@ -15,7 +16,11 @@ export async function GET() {
     if (content.length === 0) {
         return NextResponse.json({ message: 'About content not found' }, { status: 404 });
     }
-    return NextResponse.json(content[0]); 
+    // Set cache headers for ISR
+    const response = NextResponse.json(content[0]);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     console.error(`API Error GET /api/about-content (ID: ${ABOUT_CONTENT_ID}):`, error);
     return NextResponse.json({ message: 'Failed to fetch about content', error: error.message }, { status: 500 });
@@ -64,6 +69,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Failed to retrieve saved about content' }, { status: 500 });
     }
     savedContent = result[0];
+
+    // Revalidate the cache for about content
+    revalidateTag('about-content');
 
     return NextResponse.json(savedContent, { status: statusCode });
 

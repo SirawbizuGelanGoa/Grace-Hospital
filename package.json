@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "postinstall": "patch-package",
-    "typecheck": "tsc --noEmit"
+    "build:production": "cross-env NODE_ENV=production GENKIT_DISABLED=true next build",
+    "start": "cross-env NEXT_MANUAL_SIG_HANDLE=true next start",
+    "start:production": "cross-env NODE_ENV=production NEXT_MANUAL_SIG_HANDLE=true next start",
+    "start:cpanel": "cross-env NODE_ENV=production NEXT_MANUAL_SIG_HANDLE=true GENKIT_DISABLED=true next start",
+    "build:offline": "npm config set registry https://registry.npmjs.org/ && cross-env GENKIT_DISABLED=true next build --no-lint",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.6.2",
@@ -62,6 +62,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^10.0.0",
     "genkit-cli": "^1.6.1",
     "postcss": "^8",
     "tailwind-scrollbar": "^3.1.0",

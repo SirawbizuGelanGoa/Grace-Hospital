@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { HeroSlideSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const id = params.id;
@@ -38,6 +39,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Hero slide not found' }, { status: 404 });
     
     const updatedSlides = await query('SELECT * FROM hero_slides WHERE id = ?', [id]) as HeroSlideSQL[];
+
+    // Revalidate the cache for hero slides
+    revalidateTag('hero-slides');
+
     return NextResponse.json(updatedSlides[0]);
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to update hero slide', error: error.message }, { status: 500 });
@@ -49,6 +54,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     const result: any = await query('DELETE FROM hero_slides WHERE id = ?', [id]);
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Hero slide not found' }, { status: 404 });
+
+    // Revalidate the cache for hero slides
+    revalidateTag('hero-slides');
+
     return NextResponse.json({ message: 'Hero slide deleted' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to delete hero slide', error: error.message }, { status: 500 });

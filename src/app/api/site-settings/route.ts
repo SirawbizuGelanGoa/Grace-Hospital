@@ -2,20 +2,26 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { SiteSettingsSQL } from '@/lib/schema-types';
-import { randomUUID } from 'crypto'; // For generating UUID if needed
+import { revalidateTag } from 'next/cache';
+
+// Fixed ID for the single site settings row
+const SITE_SETTINGS_ID = 1;
 
 // GET site settings (returns a single object, not an array)
 export async function GET() {
   try {
-    const settings = await query('SELECT * FROM site_settings LIMIT 1') as SiteSettingsSQL[];
-    
+    const settings = await query('SELECT * FROM site_settings WHERE id = ?', [SITE_SETTINGS_ID]) as SiteSettingsSQL[];
+
     if (settings.length === 0) {
       // Return 404 if no settings found
       return NextResponse.json({ message: 'Site settings not found' }, { status: 404 });
     }
-    
-    // Return the first (and should be only) settings object, not the array
-    return NextResponse.json(settings[0]);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(settings[0]);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     console.error('API Error GET /api/site-settings:', error);
     return NextResponse.json({ message: 'Failed to fetch site settings', error: error.message }, { status: 500 });
@@ -30,15 +36,15 @@ export async function POST(request: NextRequest) {
     if (!data.hospitalName) {
       return NextResponse.json({ message: 'Hospital name is required' }, { status: 400 });
     }
-    
-    // Check if settings exist
-    const existingSettings = await query('SELECT id FROM site_settings LIMIT 1') as { id: string }[];
+
+    // Check if settings exist using fixed ID
+    const existingSettings = await query('SELECT id FROM site_settings WHERE id = ?', [SITE_SETTINGS_ID]) as { id: number }[];
 
     let savedSettings;
+    let statusCode = 200;
 
     if (existingSettings.length > 0) {
       // Update existing settings
-      const existingId = existingSettings[0].id;
       const updateSql = `UPDATE site_settings SET hospitalName = ?, logoUrl = ?, facebookUrl = ?, tiktokUrl = ?, telegramUrl = ? WHERE id = ?`;
       await query(updateSql, [
         data.hospitalName,
@@ -46,34 +52,32 @@ export async function POST(request: NextRequest) {
         data.facebookUrl || null,
         data.tiktokUrl || null,
         data.telegramUrl || null,
-        existingId
+        SITE_SETTINGS_ID
       ]);
-      const result = await query('SELECT * FROM site_settings WHERE id = ?', [existingId]) as SiteSettingsSQL[];
-      savedSettings = result[0];
     } else {
-      // Insert new settings
-      const newId = randomUUID(); // Generate UUID on the server
-      const insertSql = 'INSERT INTO site_settings (id, hospitalName, logoUrl, facebookUrl, tiktokUrl, telegramUrl) VALUES (?, ?, ?, ?, ?, ?)';
+      // Insert new settings with fixed ID
+      const insertSql = 'INSERT INTO site_settings (hospitalName, logoUrl, facebookUrl, tiktokUrl, telegramUrl) VALUES (?, ?, ?, ?, ?)';
       await query(insertSql, [
-        newId,
         data.hospitalName,
         data.logoUrl || null,
         data.facebookUrl || null,
         data.tiktokUrl || null,
         data.telegramUrl || null
       ]);
-      const result = await query('SELECT * FROM site_settings WHERE id = ?', [newId]) as SiteSettingsSQL[];
-      savedSettings = result[0];
+      statusCode = 201;
     }
-    
-    // Add cache control headers to prevent stale data
-    const headers = new Headers();
-    headers.append('Cache-Control', 'no-store, max-age=0');
-    
-    return NextResponse.json(savedSettings, { 
-      status: existingSettings.length > 0 ? 200 : 201,
-      headers
-    });
+
+    // Fetch the saved settings
+    const result = await query('SELECT * FROM site_settings WHERE id = ?', [SITE_SETTINGS_ID]) as SiteSettingsSQL[];
+    if (result.length === 0) {
+      return NextResponse.json({ message: 'Failed to retrieve saved site settings' }, { status: 500 });
+    }
+    savedSettings = result[0];
+
+    // Revalidate the cache for site settings
+    revalidateTag('site-settings');
+
+    return NextResponse.json(savedSettings, { status: statusCode });
   } catch (error: any) {
     console.error('API Error POST /api/site-settings:', error);
     return NextResponse.json({ message: 'Failed to save site settings', error: error.message }, { status: 500 });

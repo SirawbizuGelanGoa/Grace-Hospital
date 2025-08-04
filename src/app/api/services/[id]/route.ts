@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { ServiceSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 // GET a single service by ID
 export async function GET(
@@ -56,6 +57,10 @@ export async function PUT(
     }
 
     const updatedService = await query('SELECT * FROM services WHERE id = ?', [id]) as ServiceSQL[];
+
+    // Revalidate the cache for services
+    revalidateTag('services');
+
     return NextResponse.json(updatedService[0]);
 
   } catch (error: any) {
@@ -75,6 +80,10 @@ export async function DELETE(
     if (result.affectedRows === 0) {
       return NextResponse.json({ message: 'Service not found' }, { status: 404 });
     }
+
+    // Revalidate the cache for services
+    revalidateTag('services');
+
     return NextResponse.json({ message: 'Service deleted successfully' }, { status: 200 }); // Or 204 No Content
   } catch (error: any) {
     console.error(`API Error DELETE /api/services/${id}:`, error);

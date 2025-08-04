@@ -16,7 +16,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIconLucide, Newspaper, Phone, ClipboardList, Rows } from 'lucide-react';
+import { Home, Settings, User, LogOut, LayoutDashboard, ShieldAlert, Info, Wrench, Building2, Image as ImageIconLucide, Newspaper, Phone, ClipboardList, Rows, Tool } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from '@/components/ui/skeleton';
 import DynamicIcon from '@/lib/icons';
@@ -159,6 +159,12 @@ export default function AdminLayout({
                <SidebarMenuButton href="/admin/manage/settings" isActive={pathname === '/admin/manage/settings'} tooltip="Site Settings">
                  <Settings />
                   Site Settings
+               </SidebarMenuButton>
+             </SidebarMenuItem>
+             <SidebarMenuItem>
+               <SidebarMenuButton href="/admin/utilities" isActive={pathname === '/admin/utilities'} tooltip="Admin Utilities">
+                 <Tool />
+                  Utilities
                </SidebarMenuButton>
              </SidebarMenuItem>
           </SidebarMenu>

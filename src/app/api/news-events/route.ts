@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { NewsEventSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
@@ -12,7 +13,12 @@ export async function GET() {
         ...item,
         date: item.date instanceof Date ? item.date.toISOString().split('T')[0] : String(item.date),
     }));
-    return NextResponse.json(processedItems);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(processedItems);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to fetch news/events', error: error.message }, { status: 500 });
   }
@@ -37,6 +43,9 @@ export async function POST(request: NextRequest) {
     // Retrieve the newly created item using the unique 'link' field
     const newItems = await query('SELECT * FROM news_events WHERE link = ?', [data.link]) as NewsEventSQL[];
     if (newItems.length > 0) {
+        // Revalidate the cache for news events
+        revalidateTag('news-events');
+
         return NextResponse.json({
             ...newItems[0],
             date: newItems[0].date instanceof Date ? newItems[0].date.toISOString().split('T')[0] : String(newItems[0].date),

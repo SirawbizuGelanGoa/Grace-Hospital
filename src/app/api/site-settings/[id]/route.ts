@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { SiteSettingsSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 // Define the fixed ID for the site settings row
 const SITE_SETTINGS_ID = 1;
@@ -61,6 +62,10 @@ export async function PUT(
 
     // *** FIX: Use the hardcoded SITE_SETTINGS_ID to fetch the updated record ***
     const updatedSettings = await query('SELECT * FROM site_settings WHERE id = ?', [SITE_SETTINGS_ID]) as SiteSettingsSQL[];
+
+    // Revalidate the cache for site settings
+    revalidateTag('site-settings');
+
     return NextResponse.json(updatedSettings[0]);
 
   } catch (error: any) {
