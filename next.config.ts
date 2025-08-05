@@ -4,7 +4,7 @@ import type {NextConfig} from 'next';
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
-  process.env.GENKIT_DISABLED = 'true';
+  // Production mode configuration
 
   // Simple graceful shutdown for cPanel hosting
   let isShuttingDown = false;
@@ -42,14 +42,7 @@ if (isProduction) {
     gracefulShutdown('unhandledRejection');
   });
 
-  // Auto-shutdown after 25 minutes to prevent indefinite processes on cPanel
-  const maxRunTime = 25 * 60 * 1000; // 25 minutes
-  setTimeout(() => {
-    console.log('[cPanel Safe] Auto-shutdown after 25 minutes to protect hosting resources');
-    gracefulShutdown('auto-shutdown');
-  }, maxRunTime);
-
-  console.log('[cPanel Safe] Process protection enabled - will auto-shutdown after 25 minutes');
+  console.log('[cPanel Safe] Process protection enabled - graceful shutdown handlers active');
 }
 
 const nextConfig: NextConfig = {
@@ -85,12 +78,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  webpack: (config, { isServer }) => {
-    if (isProduction && isServer) {
-      config.externals = [...config.externals, '@genkit-ai/next'];
-    }
-    return config;
-  }
+  // Webpack configuration removed - no longer needed without Genkit
 };
 
 export default nextConfig;
