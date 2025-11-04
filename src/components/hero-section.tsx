@@ -5,29 +5,52 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getHeroSlides, HeroSlide } from '@/lib/mock-data';
+import { getHeroSlides } from '@/lib/api';
+import { HeroSlide } from '@/lib/schema-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const HeroSection = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+
+  const fetchSlides = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const fetchedSlides = await getHeroSlides();
+      setSlides(fetchedSlides);
+      // Reset image errors when new slides are loaded
+      setImageErrors(new Set());
+    } catch (error) {
+      console.error("Failed to fetch hero slides:", error);
+      // Optionally set an error state and display a message
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchSlides = async () => {
-      try {
-        setIsLoading(true);
-        const fetchedSlides = await getHeroSlides();
-        setSlides(fetchedSlides);
-      } catch (error) {
-        console.error("Failed to fetch hero slides:", error);
-        // Optionally set an error state and display a message
-      } finally {
-        setIsLoading(false);
+    fetchSlides();
+  }, [fetchSlides]);
+
+  // Refresh data when page becomes visible (for admin changes)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchSlides();
       }
     };
-    fetchSlides();
-  }, []);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchSlides]);
+
+  // Refresh data every 2 minutes to catch admin changes
+  useEffect(() => {
+    const interval = setInterval(fetchSlides, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, [fetchSlides]);
 
   const goToPrevious = useCallback(() => {
     const isFirstSlide = currentIndex === 0;
@@ -50,6 +73,11 @@ const HeroSection = () => {
 
   const goToSlide = (slideIndex: number) => {
     setCurrentIndex(slideIndex);
+  };
+
+  const handleImageError = (slideId: string) => {
+    console.error(`Failed to load image for slide ${slideId}`);
+    setImageErrors(prev => new Set(prev).add(slideId));
   };
 
   if (isLoading) {
@@ -84,16 +112,27 @@ const HeroSection = () => {
             index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         >
-          <Image
-            src={slide.src}
-            alt={slide.alt}
-            layout="fill"
-            objectFit="cover"
-            quality={80}
-            priority={index === 0} // Prioritize loading the first image
-            className="brightness-50"
-            data-ai-hint={slide.hint || 'hero background'}
-          />
+          {imageErrors.has(slide.id) ? (
+            <div className="w-full h-full bg-muted flex items-center justify-center text-foreground">
+              <div className="text-center">
+                <p className="text-lg font-semibold">Image Not Available</p>
+                <p className="text-sm text-muted-foreground">Slide: {slide.alt}</p>
+              </div>
+            </div>
+          ) : (
+            <Image
+              src={slide.src}
+              alt={slide.alt}
+              fill
+              style={{ objectFit: 'cover' }}
+              quality={80}
+              priority={index === 0} // Prioritize loading the first image
+              className="brightness-50"
+              data-ai-hint={slide.hint || 'hero background'}
+              onError={() => handleImageError(slide.id)}
+              sizes="100vw"
+            />
+          )}
         </div>
       ))}
       

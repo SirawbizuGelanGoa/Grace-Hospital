@@ -153,8 +153,11 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
 };
 
 export const updateSiteSettings = async (data: Partial<Omit<SiteSettings, 'id' | 'created_at'>> & { id?: string }): Promise<SiteSettings> => {
-    const settingsId = data.id || 'ss_main'; // Use a predictable ID like 'ss_main'
-    const { id, ...payload } = data;
+    // The API expects the 'id' to be handled by the backend, or to be an integer if provided.
+    // Since the database error indicates 'id' is an integer and 'ss_main' is a string,
+    // we should remove the explicit 'id' assignment here and let the backend handle it.
+    // If the backend expects a specific ID for upsert (like 1), it should manage that internally.
+    const { id, ...payload } = data; // Destructure 'id' to exclude it from the payload sent to the API
 
     // Use POST which should handle upsert logic in the API route
     return apiFetch<SiteSettings>('/api/site-settings', {
@@ -557,5 +560,7 @@ export const verifyAdminCredentials = async (username?: string, password?: strin
     logger.warn("Using MOCK admin authentication. Replace with a secure solution for production.");
     return username === MOCK_ADMIN_USERNAME && password === MOCK_ADMIN_PASSWORD;
 };
+
+
 
 

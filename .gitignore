@@ -38,6 +38,4 @@ tsconfig.tsbuildinfo
 .idx
 .firebase/*
 !.firebase/firebase.json
-# Ignore Genkit state and flow state files
-.genkit/state/*
-.genkit/flowStates/*
+# Genkit removed - no longer needed

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicIcon from "@/lib/icons"; 
-import { getServices } from '@/lib/mock-data'; 
+import { getServices } from '@/lib/api';
+import type { Service } from '@/lib/schema-types';
 
 const ServicesSection = async () => {
   const services = await getServices();

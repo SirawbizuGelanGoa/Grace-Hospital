@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { ServiceSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 // GET all services
 export async function GET() {
   try {
     const services = await query('SELECT * FROM services ORDER BY created_at DESC');
-    return NextResponse.json(services);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(services);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     console.error('API Error GET /api/services:', error);
     return NextResponse.json({ message: 'Failed to fetch services', error: error.message }, { status: 500 });
@@ -42,6 +48,9 @@ export async function POST(request: NextRequest) {
     const newServices = await query(fetchBackSql, fetchParams) as ServiceSQL[];
 
     if (newServices.length > 0) {
+        // Revalidate the cache for services
+        revalidateTag('services');
+
         return NextResponse.json(newServices[0], { status: 201 });
     } else {
         return NextResponse.json({ message: 'Service created, but could not fetch it back immediately.' }, { status: 201 });

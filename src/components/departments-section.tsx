@@ -5,8 +5,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import DynamicIcon from "@/lib/icons"; 
-import { getDepartments } from '@/lib/mock-data'; 
+import { getDepartments } from '@/lib/api';
 import NextImage from 'next/image';
+import type { Department } from '@/lib/schema-types';
 
 const DepartmentsSection = async () => {
   const departments = await getDepartments();

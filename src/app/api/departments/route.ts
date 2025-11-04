@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { DepartmentSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
     const departments = await query('SELECT * FROM departments ORDER BY created_at DESC');
-    return NextResponse.json(departments);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(departments);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to fetch departments', error: error.message }, { status: 500 });
   }
@@ -37,14 +43,20 @@ export async function POST(request: NextRequest) {
     const newDepartments = await query('SELECT * FROM departments WHERE id = ?', [newId]) as DepartmentSQL[];
     
     if (newDepartments.length > 0) {
+      // Revalidate the cache for departments
+      revalidateTag('departments');
+
       return NextResponse.json(newDepartments[0], { status: 201 });
     } else {
       // Fallback if we can't find the newly created department by ID
       const fetchBackSql = 'SELECT * FROM departments WHERE name = ? AND description = ? ORDER BY created_at DESC LIMIT 1';
       const fetchParams = [data.name, data.description];
       const fallbackDepartments = await query(fetchBackSql, fetchParams) as DepartmentSQL[];
-      
+
       if (fallbackDepartments.length > 0) {
+        // Revalidate the cache for departments
+        revalidateTag('departments');
+
         return NextResponse.json(fallbackDepartments[0], { status: 201 });
       } else {
         return NextResponse.json({ message: 'Department created, but could not fetch it back immediately.' }, { status: 201 });

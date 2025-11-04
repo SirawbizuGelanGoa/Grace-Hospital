@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { GalleryItemSQL } from '@/lib/schema-types';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
     const items = await query('SELECT * FROM gallery_items ORDER BY position ASC, created_at DESC');
-    return NextResponse.json(items);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(items);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to fetch gallery items', error: error.message }, { status: 500 });
   }
@@ -31,7 +37,12 @@ export async function POST(request: NextRequest) {
       data.hint || null, 
       data.position || 0
     ]);
-    
+
+    // Revalidate the gallery pages after successful creation
+    revalidatePath('/');
+    revalidatePath('/gallery');
+    revalidateTag('gallery-items');
+
     // Get the newly inserted ID from the result
     const newId = result.insertId;
     
@@ -54,6 +65,27 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to create gallery item', error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const data = await request.json() as { id: number };
+    if (!data.id) {
+      return NextResponse.json({ message: 'id is required' }, { status: 400 });
+    }
+    
+    const sql = 'DELETE FROM gallery_items WHERE id = ?';
+    await query(sql, [data.id]);
+
+    // Revalidate after deletion
+    revalidatePath('/');
+    revalidatePath('/gallery');
+    revalidateTag('gallery-items');
+    
+    return NextResponse.json({ message: 'Item deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ message: 'Failed to delete gallery item', error: error.message }, { status: 500 });
   }
 }
 

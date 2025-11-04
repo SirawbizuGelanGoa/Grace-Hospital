@@ -4,10 +4,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicIcon from "@/lib/icons"; 
-import { getFacilities, Facility } from '@/lib/mock-data'; 
+import { getFacilities } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import NextImage from 'next/image'; // Using NextImage
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Facility } from '@/lib/schema-types';
 
 const FacilitiesSection = () => {
   const [facilities, setFacilities] = useState<Facility[]>([]);

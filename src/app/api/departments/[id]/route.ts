@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { DepartmentSQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const id = params.id;
@@ -36,6 +37,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Department not found' }, { status: 404 });
     
     const updatedDepartments = await query('SELECT * FROM departments WHERE id = ?', [id]) as DepartmentSQL[];
+
+    // Revalidate the cache for departments
+    revalidateTag('departments');
+
     return NextResponse.json(updatedDepartments[0]);
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to update department', error: error.message }, { status: 500 });
@@ -47,6 +52,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     const result: any = await query('DELETE FROM departments WHERE id = ?', [id]);
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Department not found' }, { status: 404 });
+
+    // Revalidate the cache for departments
+    revalidateTag('departments');
+
     return NextResponse.json({ message: 'Department deleted' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to delete department', error: error.message }, { status: 500 });

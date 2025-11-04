@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { FacilitySQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const id = params.id;
@@ -36,8 +37,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Facility not found' }, { status: 404 });
     
     const updatedFacilities = await query('SELECT * FROM facilities WHERE id = ?', [id]) as FacilitySQL[];
+
+    // Revalidate the cache for facilities
+    revalidateTag('facilities');
+
     return NextResponse.json(updatedFacilities[0]);
   } catch (error: any) {
+    console.error(`API Error PUT /api/facilities/${id}:`, error);
     return NextResponse.json({ message: 'Failed to update facility', error: error.message }, { status: 500 });
   }
 }
@@ -47,8 +53,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     const result: any = await query('DELETE FROM facilities WHERE id = ?', [id]);
     if (result.affectedRows === 0) return NextResponse.json({ message: 'Facility not found' }, { status: 404 });
+
+    // Revalidate the cache for facilities
+    revalidateTag('facilities');
+
     return NextResponse.json({ message: 'Facility deleted' }, { status: 200 });
   } catch (error: any) {
+    console.error(`API Error DELETE /api/facilities/${id}:`, error);
     return NextResponse.json({ message: 'Failed to delete facility', error: error.message }, { status: 500 });
   }
 }

@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { query } from '@/lib/mysql';
 import type { FacilitySQL } from '@/lib/schema-types';
+import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
     const facilities = await query('SELECT * FROM facilities ORDER BY created_at DESC');
-    return NextResponse.json(facilities);
+
+    // Set cache headers for ISR
+    const response = NextResponse.json(facilities);
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to fetch facilities', error: error.message }, { status: 500 });
   }
@@ -43,14 +49,20 @@ export async function POST(request: NextRequest) {
     const newFacilities = await query('SELECT * FROM facilities WHERE id = ?', [newId]) as FacilitySQL[];
     
     if (newFacilities.length > 0) {
+      // Revalidate the cache for facilities
+      revalidateTag('facilities');
+
       return NextResponse.json(newFacilities[0], { status: 201 });
     } else {
       // Fallback if we can't find the newly created facility by ID
       const fetchBackSql = 'SELECT * FROM facilities WHERE name = ? AND description = ? ORDER BY created_at DESC LIMIT 1';
       const fetchParams = [data.name, data.description];
       const fallbackFacilities = await query(fetchBackSql, fetchParams) as FacilitySQL[];
-      
+
       if (fallbackFacilities.length > 0) {
+        // Revalidate the cache for facilities
+        revalidateTag('facilities');
+
         return NextResponse.json(fallbackFacilities[0], { status: 201 });
       } else {
         return NextResponse.json({ message: 'Facility created, but could not fetch it back immediately.' }, { status: 201 });

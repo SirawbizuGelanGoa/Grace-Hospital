@@ -1,35 +1,65 @@
+'use client';
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// Import the function to fetch data using the centralized API client
-import { getAboutContent, type AboutContent } from '@/lib/mock-data';
+import { getAboutContent } from '@/lib/api';
+import type { AboutContent } from '@/lib/schema-types';
+import { useState, useEffect } from 'react';
 
-// Define the structure of the About Content data (can reuse the type from mock-data)
-type AboutContentData = AboutContent;
-
-// Removed the local performFetch function as we now use getAboutContent from mock-data.ts
-
-const AboutSection = async () => {
-  // --- CORRECTED: Use getAboutContent from mock-data.ts --- 
-  // This function handles server-side vs client-side URL construction
-  const aboutContent = await getAboutContent();
-  // --- End of correction ---
-
-  const defaultContent: AboutContentData = {
-    // Use the type structure, providing default values
-    id: 'ac_main_default_placeholder', // Match default ID structure from mock-data
+const AboutSection = () => {
+  const [displayContent, setDisplayContent] = useState<AboutContent>({
+    id: 'ac_main_default_placeholder',
     title: 'About Us',
     description: 'Information about our hospital is coming soon.',
     mission: 'Our mission will be available shortly.',
     vision: 'Our vision will be available shortly.',
     imageUrl: null,
     imageHint: 'hospital building',
-    created_at: new Date().toISOString(), // Add default created_at
+    created_at: new Date().toISOString(),
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  const fetchContent = async () => {
+    try {
+      setIsLoading(true);
+      const content = await getAboutContent();
+      if (content) {
+        setDisplayContent(content);
+      }
+    } catch (error) {
+      console.error('Failed to fetch about content:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Use the fetched content or the default if fetch failed or returned null/empty
-  // Note: getAboutContent already returns a default if fetch fails, 
-  // so this || defaultContent might be redundant but safe.
-  const displayContent = aboutContent || defaultContent;
+  useEffect(() => {
+    fetchContent();
+  }, []);
+
+  // Refresh data when page becomes visible (for admin changes)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchContent();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Refresh data every 2 minutes to catch admin changes
+  useEffect(() => {
+    const interval = setInterval(fetchContent, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleImageError = () => {
+    console.error('Failed to load about section image');
+    setImageError(true);
+  };
 
   return (
     <section id="about" className="py-16 bg-secondary">
@@ -47,7 +77,7 @@ const AboutSection = async () => {
 
               {/* Image for Mobile */}
               <div className="md:hidden relative h-64 rounded-lg overflow-hidden shadow-md">
-                {displayContent.imageUrl ? (
+                {displayContent.imageUrl && !imageError ? (
                   <Image
                     src={displayContent.imageUrl}
                     alt={`About ${displayContent.title} Image`}
@@ -57,10 +87,14 @@ const AboutSection = async () => {
                     priority={false}
                     sizes="(max-width: 768px) 100vw, 50vw"
                     data-ai-hint={displayContent.imageHint || 'hospital staff'}
+                    onError={handleImageError}
                   />
                 ) : (
                   <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
-                    Image Not Available
+                    <div className="text-center">
+                      <p className="text-lg font-semibold">Image Not Available</p>
+                      {imageError && <p className="text-sm text-muted-foreground">Failed to load image</p>}
+                    </div>
                   </div>
                 )}
               </div>
@@ -80,7 +114,7 @@ const AboutSection = async () => {
 
             {/* Image for Desktop */}
             <div className="hidden md:block relative h-96 rounded-lg overflow-hidden shadow-md">
-              {displayContent.imageUrl ? (
+              {displayContent.imageUrl && !imageError ? (
                 <Image
                   src={displayContent.imageUrl}
                   alt={`About ${displayContent.title} Image`}
@@ -90,10 +124,14 @@ const AboutSection = async () => {
                   priority={false}
                   sizes="(min-width: 768px) 50vw, 100vw"
                   data-ai-hint={displayContent.imageHint || 'hospital staff'}
+                  onError={handleImageError}
                 />
               ) : (
                 <div className="h-full w-full bg-muted flex items-center justify-center text-foreground">
-                  Image Not Available
+                  <div className="text-center">
+                    <p className="text-lg font-semibold">Image Not Available</p>
+                    {imageError && <p className="text-sm text-muted-foreground">Failed to load image</p>}
+                  </div>
                 </div>
               )}
             </div>
